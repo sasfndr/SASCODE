@@ -8,6 +8,7 @@ export default Effect.gen(function* () {
     CREATE TABLE IF NOT EXISTS sascode_director_events (
       sequence INTEGER PRIMARY KEY AUTOINCREMENT,
       event_id TEXT NOT NULL UNIQUE,
+      project_id TEXT NOT NULL,
       aggregate_kind TEXT NOT NULL,
       stream_id TEXT NOT NULL,
       stream_version INTEGER NOT NULL,
@@ -27,6 +28,11 @@ export default Effect.gen(function* () {
   yield* sql`
     CREATE INDEX IF NOT EXISTS idx_sascode_director_events_type_sequence
     ON sascode_director_events (event_type, sequence)
+  `;
+
+  yield* sql`
+    CREATE INDEX IF NOT EXISTS idx_sascode_director_events_project_sequence
+    ON sascode_director_events (project_id, sequence)
   `;
 
   yield* sql`

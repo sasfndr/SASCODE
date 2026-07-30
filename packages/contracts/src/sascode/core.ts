@@ -78,6 +78,12 @@ export type StepUpRequestId = typeof StepUpRequestId.Type;
 export const AuditRecordId = makeSascodeEntityId("AuditRecordId");
 export type AuditRecordId = typeof AuditRecordId.Type;
 
+export const DirectorCommandId = makeSascodeEntityId("DirectorCommandId");
+export type DirectorCommandId = typeof DirectorCommandId.Type;
+
+export const DirectorEventId = makeSascodeEntityId("DirectorEventId");
+export type DirectorEventId = typeof DirectorEventId.Type;
+
 export const SascodeActivityType = Schema.Literals([
   "product-strategy",
   "ux-planning",

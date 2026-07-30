@@ -3,6 +3,7 @@ import {
   AuditRecordId,
   BrowserInstanceId,
   BrowserProfileId,
+  DirectorCommandId,
   ModuleId,
   ModuleInstanceId,
   ResultPacketId,
@@ -10,6 +11,7 @@ import {
   StepUpRequestId,
   TaskContractId,
   WorkflowId,
+  WorkUnitAttemptId,
   WorkUnitId,
 } from "@synara/contracts";
 import { Schema } from "effect";
@@ -104,6 +106,57 @@ export type DirectorDomainError =
   | DirectorStateTransitionError
   | DirectorConcurrencyConflictError
   | DirectorIdentityConflictError;
+
+export class DirectorCommandIdentityCollisionError extends Schema.TaggedErrorClass<DirectorCommandIdentityCollisionError>()(
+  "DirectorCommandIdentityCollisionError",
+  {
+    commandId: DirectorCommandId,
+    detail: Schema.String,
+  },
+) {
+  override get message(): string {
+    return `Director command ${this.commandId} has a conflicting identity: ${this.detail}`;
+  }
+}
+
+export class DirectorEventInvariantError extends Schema.TaggedErrorClass<DirectorEventInvariantError>()(
+  "DirectorEventInvariantError",
+  {
+    commandId: DirectorCommandId,
+    detail: Schema.String,
+  },
+) {
+  override get message(): string {
+    return `Director command ${this.commandId} could not commit an event: ${this.detail}`;
+  }
+}
+
+export class DirectorThreadLaunchError extends Schema.TaggedErrorClass<DirectorThreadLaunchError>()(
+  "DirectorThreadLaunchError",
+  {
+    attemptId: WorkUnitAttemptId,
+    code: Schema.String,
+    detail: Schema.String,
+    retryable: Schema.Boolean,
+    operationMayHaveCommitted: Schema.Boolean,
+  },
+) {
+  override get message(): string {
+    return `Thread launch failed for attempt ${this.attemptId}: ${this.detail}`;
+  }
+}
+
+export class DirectorDispatchInvariantError extends Schema.TaggedErrorClass<DirectorDispatchInvariantError>()(
+  "DirectorDispatchInvariantError",
+  {
+    attemptId: WorkUnitAttemptId,
+    detail: Schema.String,
+  },
+) {
+  override get message(): string {
+    return `Attempt ${this.attemptId} cannot be dispatched: ${this.detail}`;
+  }
+}
 
 export class RoutingPolicyNotFoundError extends Schema.TaggedErrorClass<RoutingPolicyNotFoundError>()(
   "RoutingPolicyNotFoundError",

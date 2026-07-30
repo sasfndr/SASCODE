@@ -20,6 +20,7 @@ import {
   GetDirectorWorkUnitInput,
   ListDirectorWorkflowsInput,
   ListDirectorWorkUnitAttemptsInput,
+  ListRecoverableDirectorAttemptsInput,
   TransitionDirectorAttemptInput,
   TransitionDirectorWorkflowInput,
   TransitionDirectorWorkUnitInput,
@@ -346,6 +347,35 @@ const makeDirectorWorkflowRepository = Effect.gen(function* () {
       `,
   });
 
+  const listRecoverableAttemptRows = SqlSchema.findAll({
+    Request: ListRecoverableDirectorAttemptsInput,
+    Result: WorkUnitAttempt,
+    execute: ({ limit }) =>
+      sql`
+        SELECT
+          attempt_id AS id,
+          workflow_id AS "workflowId",
+          work_unit_id AS "workUnitId",
+          attempt_number AS "attemptNumber",
+          status,
+          routing_decision_id AS "routingDecisionId",
+          task_contract_id AS "taskContractId",
+          result_packet_id AS "resultPacketId",
+          thread_id AS "threadId",
+          worktree_path AS "worktreePath",
+          baseline_git_ref AS "baselineGitRef",
+          started_at AS "startedAt",
+          settled_at AS "settledAt",
+          error,
+          created_at AS "createdAt",
+          updated_at AS "updatedAt"
+        FROM sascode_projection_work_unit_attempts
+        WHERE status IN ('preparing', 'dispatching')
+        ORDER BY updated_at ASC, attempt_id ASC
+        LIMIT ${limit}
+      `,
+  });
+
   const transitionWorkflowRow = SqlSchema.findOneOption({
     Request: TransitionDirectorWorkflowInput,
     Result: InsertedIdRow,
@@ -639,6 +669,20 @@ const makeDirectorWorkflowRepository = Effect.gen(function* () {
       ),
     );
 
+  const listRecoverableAttempts: DirectorWorkflowRepositoryShape["listRecoverableAttempts"] = (
+    input,
+  ) =>
+    listRecoverableAttemptRows({
+      limit: Math.max(1, Math.min(input.limit, 1_000)),
+    }).pipe(
+      Effect.mapError(
+        toPersistenceSqlOrDecodeError(
+          "DirectorWorkflowRepository.listRecoverableAttempts:query",
+          "DirectorWorkflowRepository.listRecoverableAttempts:decode",
+        ),
+      ),
+    );
+
   const transitionWorkflow: DirectorWorkflowRepositoryShape["transitionWorkflow"] = (input) =>
     transitionWorkflowRow(input).pipe(
       Effect.map(Option.isSome),
@@ -786,6 +830,7 @@ const makeDirectorWorkflowRepository = Effect.gen(function* () {
     getWorkUnitById,
     listAttemptsByWorkUnit,
     getAttemptById,
+    listRecoverableAttempts,
     transitionWorkflow,
     transitionWorkUnit,
     insertAttempt,

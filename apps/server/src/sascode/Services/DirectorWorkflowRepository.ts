@@ -39,6 +39,12 @@ export const ListDirectorWorkUnitAttemptsInput = Schema.Struct({
 export type ListDirectorWorkUnitAttemptsInput =
   typeof ListDirectorWorkUnitAttemptsInput.Type;
 
+export const ListRecoverableDirectorAttemptsInput = Schema.Struct({
+  limit: Schema.Number,
+});
+export type ListRecoverableDirectorAttemptsInput =
+  typeof ListRecoverableDirectorAttemptsInput.Type;
+
 export const GetDirectorAttemptInput = Schema.Struct({
   attemptId: WorkUnitAttemptId,
 });
@@ -122,6 +128,10 @@ export interface DirectorWorkflowRepositoryShape {
   readonly getAttemptById: (
     input: GetDirectorAttemptInput,
   ) => Effect.Effect<Option.Option<WorkUnitAttempt>, ProjectionRepositoryError>;
+
+  readonly listRecoverableAttempts: (
+    input: ListRecoverableDirectorAttemptsInput,
+  ) => Effect.Effect<ReadonlyArray<WorkUnitAttempt>, ProjectionRepositoryError>;
 
   readonly transitionWorkflow: (
     input: TransitionDirectorWorkflowInput,
