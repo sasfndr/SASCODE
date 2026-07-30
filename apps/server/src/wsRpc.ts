@@ -1121,6 +1121,20 @@ const makeWsRpcHandlersLayer = () =>
             ),
             "Failed to activate the SASCODE module",
           ),
+        [SASCODE_WS_METHODS.bootstrapProject]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.bootstrapProject(input)),
+            ),
+            "Failed to bootstrap the SASCODE project",
+          ),
+        [SASCODE_WS_METHODS.startFeature]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.startFeature(input)),
+            ),
+            "Failed to start the SASCODE feature workflow",
+          ),
         [SASCODE_WS_METHODS.subscribeEvents]: (input, { clientId }) =>
           streamAdmission.guard(
             clientId,

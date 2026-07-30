@@ -17,11 +17,13 @@ import { RoutingRepository } from "../Services/RoutingRepository.ts";
 
 const KNOWN_MODEL_FAMILIES = [
   "opus",
+  "fable",
   "sonnet",
   "haiku",
   "gemini",
   "glm",
   "qwen",
+  "kimi",
   "gpt",
   "grok",
   "deepseek",

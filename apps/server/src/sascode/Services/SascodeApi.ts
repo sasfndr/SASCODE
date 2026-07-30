@@ -13,6 +13,8 @@ import type {
   SascodeAcquireBrowserControlResult,
   SascodeActivateModuleInput,
   SascodeActivateModuleResult,
+  SascodeBootstrapProjectInput,
+  SascodeBootstrapProjectResult,
   SascodeCreateBrowserInstanceInput,
   SascodeInstallModuleInput,
   SascodeInstantiateModuleInput,
@@ -24,6 +26,8 @@ import type {
   SascodeRunWorkflowResult,
   SascodeScheduleWorkUnitInput,
   SascodeScheduleWorkUnitResult,
+  SascodeStartFeatureInput,
+  SascodeStartFeatureResult,
   SascodeReleaseBrowserControlInput,
   SascodeSaveBrowserProfileInput,
   SascodeSavePermissionGrantInput,
@@ -154,6 +158,14 @@ export interface SascodeApiShape {
   readonly activateModule: (
     input: SascodeActivateModuleInput,
   ) => Effect.Effect<SascodeActivateModuleResult, SascodeApiError>;
+
+  readonly bootstrapProject: (
+    input: SascodeBootstrapProjectInput,
+  ) => Effect.Effect<SascodeBootstrapProjectResult, SascodeApiError>;
+
+  readonly startFeature: (
+    input: SascodeStartFeatureInput,
+  ) => Effect.Effect<SascodeStartFeatureResult, SascodeApiError>;
 }
 
 export class SascodeApi extends ServiceMap.Service<

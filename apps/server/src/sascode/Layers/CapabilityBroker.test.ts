@@ -48,10 +48,11 @@ capabilityLayer("CapabilityBroker", (it) => {
             "read-files",
             "write-files",
             "run-arbitrary-commands",
+            "use-network",
           ],
           boundary: {
             workspaceRoots: ["/Users/sas/Documents/SASCODE"],
-            allowedHosts: ["github.com"],
+            allowedHosts: ["*"],
             deniedResources: [{ kind: "file", uri: "/Users/sas/Documents/SASCODE/.env" }],
             isolatedExecutionRequired: true,
             expiresAt: "2026-07-30T09:00:00.000Z",
@@ -85,6 +86,29 @@ capabilityLayer("CapabilityBroker", (it) => {
       });
       assert.strictEqual(allowed.outcome, "allowed");
       assert.strictEqual(allowed.matchedGrantId, grantId);
+
+      const networkAllowed = yield* broker.authorize({
+        auditRecordId: AuditRecordId.makeUnsafe("audit-capability-network-allowed"),
+        stepUpRequestId: StepUpRequestId.makeUnsafe("step-up-network-unused"),
+        scope,
+        actorKind: "agent",
+        actorId: "codex",
+        capability: "use-network",
+        resources: [
+          {
+            kind: "url",
+            uri: "https://models.example.ai/v1/catalog",
+          },
+        ],
+        risk: "medium",
+        reason: "Discover an explicitly configured model provider.",
+        consequence: "The isolated agent can call the remote provider.",
+        isolatedExecution: true,
+        correlationId: "attempt-capability-broker",
+        occurredAt: "2026-07-30T08:01:30.000Z",
+      });
+      assert.strictEqual(networkAllowed.outcome, "allowed");
+      assert.strictEqual(networkAllowed.matchedGrantId, grantId);
 
       const stepUpId = StepUpRequestId.makeUnsafe("step-up-capability-broker");
       const stepUp = yield* broker.authorize({
@@ -177,6 +201,7 @@ capabilityLayer("CapabilityBroker", (it) => {
         audit.map(({ record }) => [record.action, record.outcome]),
         [
           ["capability:write-files", "allowed"],
+          ["capability:use-network", "allowed"],
           ["capability:run-arbitrary-commands", "denied"],
           ["capability:read-files", "denied"],
         ],

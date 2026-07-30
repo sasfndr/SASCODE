@@ -23,6 +23,8 @@ describe("WsRequestAdmission", () => {
     expect(classifyWsRequest(SASCODE_WS_METHODS.publishRoutingPolicy)).toBe("control");
     expect(classifyWsRequest(SASCODE_WS_METHODS.savePermissionGrant)).toBe("control");
     expect(classifyWsRequest(SASCODE_WS_METHODS.activateModule)).toBe("control");
+    expect(classifyWsRequest(SASCODE_WS_METHODS.bootstrapProject)).toBe("control");
+    expect(classifyWsRequest(SASCODE_WS_METHODS.startFeature)).toBe("control");
   });
 
   it("reserves independent capacity for control traffic during an expensive-read flood", async () => {

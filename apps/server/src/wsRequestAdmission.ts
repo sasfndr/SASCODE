@@ -36,6 +36,8 @@ const CONTROL_METHODS = new Set<string>([
   SASCODE_WS_METHODS.installModule,
   SASCODE_WS_METHODS.instantiateModule,
   SASCODE_WS_METHODS.activateModule,
+  SASCODE_WS_METHODS.bootstrapProject,
+  SASCODE_WS_METHODS.startFeature,
   WS_METHODS.terminalWrite,
   WS_METHODS.terminalAckOutput,
   WS_METHODS.terminalResize,

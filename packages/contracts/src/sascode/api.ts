@@ -23,6 +23,7 @@ import {
   SascodeAuthorizationDecision,
   SascodePermissionCapability,
   SascodePermissionGrant,
+  SascodePermissionProfile,
 } from "./permissions";
 import { ProviderCapabilitySnapshot } from "./capabilities";
 import {
@@ -83,6 +84,8 @@ export const SASCODE_WS_METHODS = {
   installModule: "sascode.installModule",
   instantiateModule: "sascode.instantiateModule",
   activateModule: "sascode.activateModule",
+  bootstrapProject: "sascode.bootstrapProject",
+  startFeature: "sascode.startFeature",
 } as const;
 
 export const SascodeGetWorkspaceSnapshotInput = Schema.Struct({
@@ -361,3 +364,69 @@ export const SascodeActivateModuleResult = Schema.Struct({
 });
 export type SascodeActivateModuleResult =
   typeof SascodeActivateModuleResult.Type;
+
+export const SascodeBootstrapProjectInput = Schema.Struct({
+  projectId: ProjectId,
+  projectName: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(512)),
+  workspaceRoots: Schema.Array(
+    Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(8_192)),
+  ).check(Schema.isMinLength(1), Schema.isMaxLength(64)),
+  allowedHosts: Schema.Array(
+    Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(512)),
+  ).check(Schema.isMaxLength(128)),
+  permissionProfile: SascodePermissionProfile,
+  policyRevision: Schema.Number,
+  maxParallelWorkUnits: Schema.Number,
+  projectCharter: Schema.optional(
+    Schema.String.check(Schema.isMaxLength(1_000_000)),
+  ),
+  designContract: Schema.optional(
+    Schema.String.check(Schema.isMaxLength(1_000_000)),
+  ),
+  globalTasteProfile: Schema.optional(
+    Schema.String.check(Schema.isMaxLength(1_000_000)),
+  ),
+  occurredAt: IsoDateTime,
+});
+export type SascodeBootstrapProjectInput =
+  typeof SascodeBootstrapProjectInput.Type;
+
+export const SascodeBootstrapProjectResult = Schema.Struct({
+  policy: RoutingPolicy,
+  permissionGrant: SascodePermissionGrant,
+  contextArtifacts: Schema.Array(ContextArtifact),
+  policyCreated: Schema.Boolean,
+  permissionGrantCreated: Schema.Boolean,
+});
+export type SascodeBootstrapProjectResult =
+  typeof SascodeBootstrapProjectResult.Type;
+
+export const SascodeStartFeatureInput = Schema.Struct({
+  requestId: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(512)),
+  projectId: ProjectId,
+  title: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(2_048)),
+  outcome: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(8_192)),
+  request: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(262_144)),
+  workspaceRoot: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(8_192)),
+  includeFrontend: Schema.Boolean,
+  includeBackend: Schema.Boolean,
+  includeBrowserValidation: Schema.Boolean,
+  includeIndependentReview: Schema.Boolean,
+  permissionProfile: SascodePermissionProfile,
+  policyRevision: Schema.Number,
+  concurrencyLimit: Schema.Number,
+  maxAttempts: Schema.Number,
+  baselineGitRef: Schema.optional(Schema.NullOr(Schema.String)),
+  occurredAt: IsoDateTime,
+});
+export type SascodeStartFeatureInput =
+  typeof SascodeStartFeatureInput.Type;
+
+export const SascodeStartFeatureResult = Schema.Struct({
+  workflow: Workflow,
+  executionSpecs: Schema.Array(WorkUnitExecutionSpec),
+  execution: WorkUnitExecutionBatch,
+  replayed: Schema.Boolean,
+});
+export type SascodeStartFeatureResult =
+  typeof SascodeStartFeatureResult.Type;

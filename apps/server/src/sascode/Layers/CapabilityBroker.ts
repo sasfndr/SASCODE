@@ -60,6 +60,7 @@ const resourceMatchesBoundary = (
       const host = new URL(resource.uri).hostname.toLowerCase();
       return grant.boundary.allowedHosts.some((allowedHost) => {
         const normalized = allowedHost.toLowerCase();
+        if (normalized === "*") return true;
         return host === normalized || host.endsWith(`.${normalized}`);
       });
     } catch {

@@ -1,6 +1,7 @@
-import type {
-  DirectorEvent,
-  SascodeDirectorCommandResult,
+import {
+  DirectorCommandId,
+  type DirectorEvent,
+  type SascodeDirectorCommandResult,
 } from "@synara/contracts";
 import { Effect, Layer, Option, Stream } from "effect";
 
@@ -20,6 +21,8 @@ import { SascodeApi, type SascodeApiShape } from "../Services/SascodeApi.ts";
 import { WorkUnitOrchestrator } from "../Services/WorkUnitOrchestrator.ts";
 import { ResultIngestion } from "../Services/ResultIngestion.ts";
 import { ProviderCatalogSync } from "../Services/ProviderCatalogSync.ts";
+import { createSascodeProjectDefaults } from "../projectDefaults.ts";
+import { createSascodeFeaturePlan } from "../featureWorkflow.ts";
 
 const makeSascodeApi = Effect.gen(function* () {
   const attempts = yield* AttemptDispatcher;
@@ -270,6 +273,144 @@ const makeSascodeApi = Effect.gen(function* () {
   const activateModule: SascodeApiShape["activateModule"] = (input) =>
     moduleRuntime.activate(input);
 
+  const bootstrapProject: SascodeApiShape["bootstrapProject"] = (input) =>
+    Effect.gen(function* () {
+      const defaults = createSascodeProjectDefaults(input);
+      const [policyCreated, permissionGrantCreated] = yield* Effect.all(
+        [
+          routing.publishPolicy(defaults.policy),
+          capabilities.saveGrant(defaults.permissionGrant),
+        ],
+        { concurrency: "unbounded" },
+      );
+      yield* Effect.forEach(
+        defaults.contextArtifacts,
+        (artifact) => context.upsertContextArtifact(artifact),
+        { concurrency: 1, discard: true },
+      );
+      return {
+        policy: defaults.policy,
+        permissionGrant: defaults.permissionGrant,
+        contextArtifacts: [...defaults.contextArtifacts],
+        policyCreated,
+        permissionGrantCreated,
+      };
+    });
+
+  const startFeature: SascodeApiShape["startFeature"] = (input) =>
+    Effect.gen(function* () {
+      const [activeContext, activeGrants] = yield* Effect.all(
+        [
+          context.listActiveContextArtifacts({
+            projectId: input.projectId,
+          }),
+          capabilities.listActiveGrants({
+            projectId: input.projectId,
+            now: input.occurredAt,
+          }),
+        ],
+        { concurrency: "unbounded" },
+      );
+      const plan = createSascodeFeaturePlan(
+        input,
+        activeContext.map(({ id }) => id),
+        activeGrants
+          .filter(({ profile }) => profile === input.permissionProfile)
+          .map(({ id }) => id),
+      );
+      const proposed = yield* commands.proposeWorkflow({
+        context: {
+          commandId: DirectorCommandId.makeUnsafe(
+            `sascode:${input.projectId}:${input.requestId}:propose`,
+          ),
+          actorKind: "human",
+          actorId: "session-owner",
+          occurredAt: input.occurredAt,
+          correlationId: `sascode-feature:${input.requestId}`,
+          causationEventId: null,
+        },
+        workflow: plan.workflow,
+      });
+      let current = proposed.current;
+      if (current.status === "proposed") {
+        current = (
+          yield* commands.moveWorkflow({
+            context: {
+              commandId: DirectorCommandId.makeUnsafe(
+                `sascode:${input.projectId}:${input.requestId}:approve`,
+              ),
+              actorKind: "human",
+              actorId: "session-owner",
+              occurredAt: input.occurredAt,
+              correlationId: `sascode-feature:${input.requestId}`,
+              causationEventId: null,
+            },
+            workflowId: current.id,
+            nextStatus: "awaiting-approval",
+          })
+        ).current;
+      }
+      if (current.status === "awaiting-approval") {
+        current = (
+          yield* commands.moveWorkflow({
+            context: {
+              commandId: DirectorCommandId.makeUnsafe(
+                `sascode:${input.projectId}:${input.requestId}:queue`,
+              ),
+              actorKind: "human",
+              actorId: "session-owner",
+              occurredAt: input.occurredAt,
+              correlationId: `sascode-feature:${input.requestId}`,
+              causationEventId: null,
+            },
+            workflowId: current.id,
+            nextStatus: "queued",
+          })
+        ).current;
+      }
+
+      const results = yield* Effect.forEach(
+        plan.executionSpecs,
+        (spec) =>
+          orchestrator.schedule({
+            spec,
+            occurredAt: input.occurredAt,
+            actorId: "session-owner",
+          }).pipe(
+            Effect.map((result) => ({
+              workUnitId: spec.workUnitId,
+              result,
+            })),
+          ),
+        { concurrency: 1 },
+      );
+      const workflow = Option.getOrElse(
+        yield* workflows.getById({ workflowId: current.id }),
+        () => current,
+      );
+      return {
+        workflow,
+        executionSpecs: [...plan.executionSpecs],
+        execution: {
+          scanned: results.length,
+          scheduled: results.filter(
+            ({ result }) => result.disposition === "scheduled",
+          ).length,
+          active: results.filter(
+            ({ result }) => result.disposition === "already-active",
+          ).length,
+          exhausted: results.filter(
+            ({ result }) => result.disposition === "retry-exhausted",
+          ).length,
+          deferred: results.filter(
+            ({ result }) => result.disposition === "not-ready",
+          ).length,
+          results,
+        },
+        replayed: proposed.replayed,
+      };
+    });
+
   return {
     getWorkspaceSnapshot,
     getProjectSnapshot,
@@ -294,6 +435,8 @@ const makeSascodeApi = Effect.gen(function* () {
     installModule,
     instantiateModule,
     activateModule,
+    bootstrapProject,
+    startFeature,
   } satisfies SascodeApiShape;
 });
 

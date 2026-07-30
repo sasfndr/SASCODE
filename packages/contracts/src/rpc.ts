@@ -196,6 +196,8 @@ import {
   SascodeAcquireBrowserControlResult,
   SascodeActivateModuleInput,
   SascodeActivateModuleResult,
+  SascodeBootstrapProjectInput,
+  SascodeBootstrapProjectResult,
   SascodeCreateBrowserInstanceInput,
   SascodeDirectorCommand,
   SascodeDirectorCommandResult,
@@ -214,6 +216,8 @@ import {
   SascodeRunWorkflowResult,
   SascodeScheduleWorkUnitInput,
   SascodeScheduleWorkUnitResult,
+  SascodeStartFeatureInput,
+  SascodeStartFeatureResult,
   SascodeReleaseBrowserControlInput,
   SascodeSaveBrowserProfileInput,
   SascodeSavePermissionGrantInput,
@@ -584,6 +588,24 @@ export const WsSascodeActivateModuleRpc = Rpc.make(
   {
     payload: SascodeActivateModuleInput,
     success: SascodeActivateModuleResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeBootstrapProjectRpc = Rpc.make(
+  SASCODE_WS_METHODS.bootstrapProject,
+  {
+    payload: SascodeBootstrapProjectInput,
+    success: SascodeBootstrapProjectResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeStartFeatureRpc = Rpc.make(
+  SASCODE_WS_METHODS.startFeature,
+  {
+    payload: SascodeStartFeatureInput,
+    success: SascodeStartFeatureResult,
     error: WsRpcError,
   },
 );
@@ -1269,6 +1291,8 @@ export const WsFeatureRpcGroup = RpcGroup.make(
   WsSascodeInstallModuleRpc,
   WsSascodeInstantiateModuleRpc,
   WsSascodeActivateModuleRpc,
+  WsSascodeBootstrapProjectRpc,
+  WsSascodeStartFeatureRpc,
   WsProjectsDiscoverScriptsRpc,
   WsProjectsListDirectoriesRpc,
   WsProjectsSearchEntriesRpc,
