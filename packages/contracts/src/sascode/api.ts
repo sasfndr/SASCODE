@@ -26,7 +26,10 @@ import {
   SascodePermissionGrant,
   SascodePermissionProfile,
 } from "./permissions";
-import { ProviderCapabilitySnapshot } from "./capabilities";
+import {
+  ProviderCapabilitySnapshot,
+  ProviderCatalogRefreshResult,
+} from "./capabilities";
 import {
   AuditRecordId,
   BrowserInstanceId,
@@ -472,3 +475,78 @@ export const SascodeResolveAttentionItemInput = Schema.Struct({
 });
 export type SascodeResolveAttentionItemInput =
   typeof SascodeResolveAttentionItemInput.Type;
+
+/**
+ * Stable renderer-facing client surface for the SASCODE control plane.
+ *
+ * The WebSocket transport implements this interface directly. Keeping the
+ * surface beside the schemas means UI code consumes the same typed contract as
+ * the server rather than duplicating request and result shapes.
+ */
+export interface SascodeClientApi {
+  getWorkspaceSnapshot: (
+    input: SascodeGetWorkspaceSnapshotInput,
+  ) => Promise<SascodeWorkspaceSnapshot>;
+  getProjectSnapshot: (
+    input: SascodeGetProjectSnapshotInput,
+  ) => Promise<SascodeProjectSnapshot>;
+  getWorkflow: (input: SascodeGetWorkflowInput) => Promise<Workflow | null>;
+  listProviderCapabilities: () => Promise<ReadonlyArray<ProviderCapabilitySnapshot>>;
+  refreshProviderCapabilities: (
+    input: SascodeRefreshProviderCapabilitiesInput,
+  ) => Promise<ProviderCatalogRefreshResult>;
+  listEvents: (input: SascodeListEventsInput) => Promise<ReadonlyArray<DirectorEvent>>;
+  executeDirectorCommand: (
+    input: SascodeDirectorCommand,
+  ) => Promise<SascodeDirectorCommandResult>;
+  scheduleWorkUnit: (
+    input: SascodeScheduleWorkUnitInput,
+  ) => Promise<SascodeScheduleWorkUnitResult>;
+  runWorkflow: (input: SascodeRunWorkflowInput) => Promise<SascodeRunWorkflowResult>;
+  submitResult: (input: SascodeSubmitResultInput) => Promise<SascodeSubmitResultResult>;
+  dispatchAttempt: (
+    input: SascodeDispatchAttemptInput,
+  ) => Promise<SascodeDispatchAttemptResult>;
+  subscribeEvents: (
+    input: SascodeSubscribeEventsInput,
+    listener: (event: DirectorEvent) => void,
+  ) => () => void;
+  publishRoutingPolicy: (input: SascodePublishRoutingPolicyInput) => Promise<boolean>;
+  upsertContextArtifact: (input: SascodeUpsertContextArtifactInput) => Promise<void>;
+  savePermissionGrant: (input: SascodeSavePermissionGrantInput) => Promise<boolean>;
+  saveBrowserProfile: (input: SascodeSaveBrowserProfileInput) => Promise<BrowserProfile>;
+  createBrowserInstance: (
+    input: SascodeCreateBrowserInstanceInput,
+  ) => Promise<BrowserInstance>;
+  acquireBrowserControl: (
+    input: SascodeAcquireBrowserControlInput,
+  ) => Promise<SascodeAcquireBrowserControlResult>;
+  releaseBrowserControl: (
+    input: SascodeReleaseBrowserControlInput,
+  ) => Promise<BrowserInstance>;
+  updateBrowserInstance: (
+    input: SascodeUpdateBrowserInstanceInput,
+  ) => Promise<BrowserInstance>;
+  installModule: (input: SascodeInstallModuleInput) => Promise<SascodeModuleManifest>;
+  instantiateModule: (
+    input: SascodeInstantiateModuleInput,
+  ) => Promise<SascodeModuleInstance>;
+  activateModule: (
+    input: SascodeActivateModuleInput,
+  ) => Promise<SascodeActivateModuleResult>;
+  updateModuleInstance: (
+    input: SascodeUpdateModuleInstanceInput,
+  ) => Promise<SascodeModuleInstance>;
+  bootstrapProject: (
+    input: SascodeBootstrapProjectInput,
+  ) => Promise<SascodeBootstrapProjectResult>;
+  startFeature: (input: SascodeStartFeatureInput) => Promise<SascodeStartFeatureResult>;
+  getWorkspaceLayout: (
+    input: SascodeGetWorkspaceLayoutInput,
+  ) => Promise<SascodeWorkspaceLayout | null>;
+  saveWorkspaceLayout: (
+    input: SascodeSaveWorkspaceLayoutInput,
+  ) => Promise<SascodeWorkspaceLayout>;
+  saveAttentionPreference: (input: SascodeSaveAttentionPreferenceInput) => Promise<void>;
+  resolveAttentionItem: (input: SascodeResolveAttentionItemInput) => Promise<boolean>;
+}
