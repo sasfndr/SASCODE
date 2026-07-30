@@ -248,6 +248,10 @@
       "types": "./src/providerDeliveryBlock.ts",
       "import": "./src/providerDeliveryBlock.ts"
     },
+    "./sascodeWorkflow": {
+      "types": "./src/sascodeWorkflow.ts",
+      "import": "./src/sascodeWorkflow.ts"
+    },
     "./browserAnnotations": {
       "types": "./src/browserAnnotations.ts",
       "import": "./src/browserAnnotations.ts"
