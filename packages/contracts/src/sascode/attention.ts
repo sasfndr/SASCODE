@@ -75,3 +75,38 @@ export const AttentionPreference = Schema.Struct({
   updatedAt: IsoDateTime,
 });
 export type AttentionPreference = typeof AttentionPreference.Type;
+
+export const AttentionSuppressionReason = Schema.Literals([
+  "explicit-mute",
+  "focus-mode",
+  "system-notifications-disabled",
+]);
+export type AttentionSuppressionReason =
+  typeof AttentionSuppressionReason.Type;
+
+export const AttentionPresentationItem = Schema.Struct({
+  item: AttentionItem,
+  effectiveInterruptionClass: AttentionInterruptionClass,
+  suppressed: Schema.Boolean,
+  suppressionReason: Schema.optional(
+    Schema.NullOr(AttentionSuppressionReason),
+  ),
+});
+export type AttentionPresentationItem =
+  typeof AttentionPresentationItem.Type;
+
+export const ProjectAttentionSnapshot = Schema.Struct({
+  summary: ProjectAttentionSummary,
+  preference: AttentionPreference,
+  items: Schema.Array(AttentionPresentationItem),
+  generatedAt: IsoDateTime,
+});
+export type ProjectAttentionSnapshot =
+  typeof ProjectAttentionSnapshot.Type;
+
+export const WorkspaceAttentionSnapshot = Schema.Struct({
+  projects: Schema.Array(ProjectAttentionSnapshot),
+  generatedAt: IsoDateTime,
+});
+export type WorkspaceAttentionSnapshot =
+  typeof WorkspaceAttentionSnapshot.Type;

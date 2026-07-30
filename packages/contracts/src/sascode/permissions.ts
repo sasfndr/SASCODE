@@ -88,5 +88,41 @@ export const SascodeStepUpRequest = Schema.Struct({
   requestedAt: IsoDateTime,
   resolvedAt: Schema.optional(Schema.NullOr(IsoDateTime)),
   resolvedBy: Schema.optional(Schema.NullOr(TrimmedNonEmptyString)),
+  decisionReason: Schema.optional(Schema.NullOr(TrimmedNonEmptyString)),
 });
 export type SascodeStepUpRequest = typeof SascodeStepUpRequest.Type;
+
+export const SascodeAuthorizationOutcome = Schema.Literals([
+  "allowed",
+  "denied",
+  "step-up-required",
+]);
+export type SascodeAuthorizationOutcome = typeof SascodeAuthorizationOutcome.Type;
+
+export const SascodeAuthorizationDecision = Schema.Struct({
+  outcome: SascodeAuthorizationOutcome,
+  capability: SascodePermissionCapability,
+  matchedGrantId: Schema.optional(Schema.NullOr(PermissionGrantId)),
+  stepUpRequestId: Schema.optional(Schema.NullOr(StepUpRequestId)),
+  reason: TrimmedNonEmptyString,
+  decidedAt: IsoDateTime,
+});
+export type SascodeAuthorizationDecision =
+  typeof SascodeAuthorizationDecision.Type;
+
+export const SascodeSecretRef = Schema.Struct({
+  ref: TrimmedNonEmptyString,
+  displayName: TrimmedNonEmptyString,
+  providerKey: Schema.optional(Schema.NullOr(TrimmedNonEmptyString)),
+  projectId: Schema.optional(Schema.NullOr(SascodeScope.fields.projectId)),
+  vaultBackend: Schema.Literals([
+    "os-keychain",
+    "encrypted-file",
+    "external-vault",
+  ]),
+  vaultLocator: TrimmedNonEmptyString,
+  createdAt: IsoDateTime,
+  updatedAt: IsoDateTime,
+  revokedAt: Schema.optional(Schema.NullOr(IsoDateTime)),
+});
+export type SascodeSecretRef = typeof SascodeSecretRef.Type;

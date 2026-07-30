@@ -1,7 +1,13 @@
 import {
   AgentRoleId,
+  AuditRecordId,
+  BrowserInstanceId,
+  BrowserProfileId,
+  ModuleId,
+  ModuleInstanceId,
   ResultPacketId,
   RoutingPolicyId,
+  StepUpRequestId,
   TaskContractId,
   WorkflowId,
   WorkUnitId,
@@ -224,3 +230,110 @@ export type TaskContractDomainError =
   | TaskContractConflictError
   | ResultPacketInvariantError
   | ResultPacketConflictError;
+
+export class CapabilityAuditConflictError extends Schema.TaggedErrorClass<CapabilityAuditConflictError>()(
+  "CapabilityAuditConflictError",
+  {
+    auditRecordId: AuditRecordId,
+  },
+) {
+  override get message(): string {
+    return `Audit record ${this.auditRecordId} already exists.`;
+  }
+}
+
+export class StepUpRequestConflictError extends Schema.TaggedErrorClass<StepUpRequestConflictError>()(
+  "StepUpRequestConflictError",
+  {
+    requestId: StepUpRequestId,
+  },
+) {
+  override get message(): string {
+    return `Step-up request ${this.requestId} already exists or changed concurrently.`;
+  }
+}
+
+export type CapabilityBrokerDomainError =
+  | CapabilityAuditConflictError
+  | StepUpRequestConflictError;
+
+export class BrowserWorkspaceNotFoundError extends Schema.TaggedErrorClass<BrowserWorkspaceNotFoundError>()(
+  "BrowserWorkspaceNotFoundError",
+  {
+    entityKind: Schema.Literals(["profile", "instance"]),
+    entityId: Schema.String,
+  },
+) {
+  override get message(): string {
+    return `Browser ${this.entityKind} ${this.entityId} does not exist.`;
+  }
+}
+
+export class BrowserWorkspaceConflictError extends Schema.TaggedErrorClass<BrowserWorkspaceConflictError>()(
+  "BrowserWorkspaceConflictError",
+  {
+    instanceId: BrowserInstanceId,
+    detail: Schema.String,
+  },
+) {
+  override get message(): string {
+    return `Browser instance ${this.instanceId} conflict: ${this.detail}`;
+  }
+}
+
+export class BrowserProfileConflictError extends Schema.TaggedErrorClass<BrowserProfileConflictError>()(
+  "BrowserProfileConflictError",
+  {
+    profileId: BrowserProfileId,
+  },
+) {
+  override get message(): string {
+    return `Browser profile ${this.profileId} conflicts with an existing profile or partition.`;
+  }
+}
+
+export type BrowserWorkspaceDomainError =
+  | BrowserWorkspaceNotFoundError
+  | BrowserWorkspaceConflictError
+  | BrowserProfileConflictError;
+
+export class ModuleManifestInvariantError extends Schema.TaggedErrorClass<ModuleManifestInvariantError>()(
+  "ModuleManifestInvariantError",
+  {
+    moduleId: ModuleId,
+    detail: Schema.String,
+  },
+) {
+  override get message(): string {
+    return `Module ${this.moduleId} manifest is invalid: ${this.detail}`;
+  }
+}
+
+export class ModuleInstanceConflictError extends Schema.TaggedErrorClass<ModuleInstanceConflictError>()(
+  "ModuleInstanceConflictError",
+  {
+    instanceId: ModuleInstanceId,
+    detail: Schema.String,
+  },
+) {
+  override get message(): string {
+    return `Module instance ${this.instanceId} conflict: ${this.detail}`;
+  }
+}
+
+export class ModuleNotFoundError extends Schema.TaggedErrorClass<ModuleNotFoundError>()(
+  "ModuleNotFoundError",
+  {
+    entityKind: Schema.Literals(["manifest", "instance"]),
+    entityId: Schema.String,
+  },
+) {
+  override get message(): string {
+    return `Module ${this.entityKind} ${this.entityId} does not exist.`;
+  }
+}
+
+export type ModuleRuntimeDomainError =
+  | ModuleManifestInvariantError
+  | ModuleInstanceConflictError
+  | ModuleNotFoundError;

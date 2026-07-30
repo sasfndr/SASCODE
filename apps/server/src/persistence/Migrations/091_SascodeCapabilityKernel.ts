@@ -101,6 +101,7 @@ export default Effect.gen(function* () {
       last_error TEXT,
       runtime_generation INTEGER NOT NULL DEFAULT 0,
       authorization_epoch INTEGER NOT NULL DEFAULT 0,
+      control_lease_expires_at TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       stopped_at TEXT,

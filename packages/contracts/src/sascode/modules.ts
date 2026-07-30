@@ -61,6 +61,7 @@ export type SascodeModuleInstanceStatus = typeof SascodeModuleInstanceStatus.Typ
 export const SascodeModuleInstance = Schema.Struct({
   id: ModuleInstanceId,
   moduleId: ModuleId,
+  moduleVersion: TrimmedNonEmptyString,
   projectId: Schema.optional(Schema.NullOr(ProjectId)),
   status: SascodeModuleInstanceStatus,
   placement: SascodeModulePlacement,
