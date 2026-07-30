@@ -995,6 +995,15 @@ const makeWsRpcHandlersLayer = () =>
             sascode.listProviderCapabilities(),
             "Failed to list SASCODE provider capabilities",
           ),
+        [SASCODE_WS_METHODS.refreshProviderCapabilities]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(
+                sascode.refreshProviderCapabilities(input),
+              ),
+            ),
+            "Failed to refresh SASCODE provider capabilities",
+          ),
         [SASCODE_WS_METHODS.listEvents]: (input) =>
           rpcEffect(
             sascode.listEvents(input),
@@ -1006,6 +1015,27 @@ const makeWsRpcHandlersLayer = () =>
               Effect.andThen(sascode.executeDirectorCommand(command)),
             ),
             "Failed to execute the SASCODE Director command",
+          ),
+        [SASCODE_WS_METHODS.scheduleWorkUnit]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.scheduleWorkUnit(input)),
+            ),
+            "Failed to schedule the SASCODE work unit",
+          ),
+        [SASCODE_WS_METHODS.runWorkflow]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.runWorkflow(input)),
+            ),
+            "Failed to run the SASCODE workflow",
+          ),
+        [SASCODE_WS_METHODS.submitResult]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.submitResult(input)),
+            ),
+            "Failed to submit the SASCODE result",
           ),
         [SASCODE_WS_METHODS.dispatchAttempt]: (input) =>
           rpcEffect(

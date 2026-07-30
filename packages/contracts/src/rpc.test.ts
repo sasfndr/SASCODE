@@ -26,6 +26,7 @@ describe("WS RPC contracts", () => {
       true,
     );
     expect(WsFeatureRpcGroup.requests.has(SASCODE_WS_METHODS.getProjectSnapshot)).toBe(true);
+    expect(WsFeatureRpcGroup.requests.has(SASCODE_WS_METHODS.scheduleWorkUnit)).toBe(true);
     expect(WsFeatureRpcGroup.requests.has(SASCODE_WS_METHODS.subscribeEvents)).toBe(true);
   });
 

@@ -109,6 +109,18 @@ export const ProviderConnection = Schema.Struct({
 });
 export type ProviderConnection = typeof ProviderConnection.Type;
 
+export const ProviderCatalogRefreshResult = Schema.Struct({
+  snapshots: Schema.Array(ProviderCapabilitySnapshot),
+  failures: Schema.Array(
+    Schema.Struct({
+      provider: ProviderKind,
+      detail: Schema.String,
+    }),
+  ),
+});
+export type ProviderCatalogRefreshResult =
+  typeof ProviderCatalogRefreshResult.Type;
+
 export const ResolvedModelTarget = Schema.Struct({
   connectionId: ProviderConnectionId,
   providerKey: TrimmedNonEmptyString,

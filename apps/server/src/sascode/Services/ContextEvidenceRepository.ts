@@ -6,6 +6,7 @@ import {
   QualityGateRun,
   ResultPacket,
   ResultPacketId,
+  ResultPacketVerification,
   TaskContract,
   TaskContractId,
   WorkUnitAttemptId,
@@ -95,6 +96,17 @@ export interface ContextEvidenceRepositoryShape {
   readonly getResultPacketByAttempt: (
     input: GetResultPacketByAttemptInput,
   ) => Effect.Effect<Option.Option<ResultPacket>, ProjectionRepositoryError>;
+
+  readonly saveResultVerification: (
+    verification: ResultPacketVerification,
+  ) => Effect.Effect<boolean, ProjectionRepositoryError>;
+
+  readonly getResultVerification: (
+    input: GetResultPacketInput,
+  ) => Effect.Effect<
+    Option.Option<ResultPacketVerification>,
+    ProjectionRepositoryError
+  >;
 
   readonly saveEvidenceRecord: (
     input: SaveEvidenceRecordInput,

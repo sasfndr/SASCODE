@@ -32,6 +32,7 @@ describe("WebSocket compatibility bootstrap", () => {
     expect(result.serverBuild.length).toBeGreaterThan(0);
     expect(result.serverInstanceId.length).toBeGreaterThan(0);
     expect(result.capabilities).toContain("orchestration.cursor-safe-streams");
+    expect(result.capabilities).toContain("sascode.director-v1");
     expect(result.capabilities).toContain("orchestration.thread-detail-snapshot");
   });
 

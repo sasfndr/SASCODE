@@ -284,6 +284,34 @@ export type TaskContractDomainError =
   | ResultPacketInvariantError
   | ResultPacketConflictError;
 
+export class WorkUnitExecutionSpecConflictError extends Schema.TaggedErrorClass<WorkUnitExecutionSpecConflictError>()(
+  "WorkUnitExecutionSpecConflictError",
+  {
+    workUnitId: WorkUnitId,
+    revision: Schema.Number,
+    detail: Schema.String,
+  },
+) {
+  override get message(): string {
+    return (
+      `Execution spec ${this.workUnitId}@${this.revision} conflicts with ` +
+      `durable execution intent: ${this.detail}`
+    );
+  }
+}
+
+export class WorkUnitExecutionInvariantError extends Schema.TaggedErrorClass<WorkUnitExecutionInvariantError>()(
+  "WorkUnitExecutionInvariantError",
+  {
+    workUnitId: WorkUnitId,
+    detail: Schema.String,
+  },
+) {
+  override get message(): string {
+    return `Cannot orchestrate work unit ${this.workUnitId}: ${this.detail}`;
+  }
+}
+
 export class CapabilityAuditConflictError extends Schema.TaggedErrorClass<CapabilityAuditConflictError>()(
   "CapabilityAuditConflictError",
   {

@@ -23,6 +23,13 @@ import {
   WorkUnitId,
 } from "./core";
 import {
+  WorkUnitExecutionBatch,
+  WorkUnitExecutionResult,
+  WorkUnitExecutionSpec,
+  WorkUnitResultSubmission,
+  WorkUnitResultSubmissionOutcome,
+} from "./execution";
+import {
   Workflow,
   WorkflowStatus,
   WorkUnit,
@@ -40,8 +47,12 @@ export const SASCODE_WS_METHODS = {
   getProjectSnapshot: "sascode.getProjectSnapshot",
   getWorkflow: "sascode.getWorkflow",
   listProviderCapabilities: "sascode.listProviderCapabilities",
+  refreshProviderCapabilities: "sascode.refreshProviderCapabilities",
   listEvents: "sascode.listEvents",
   executeDirectorCommand: "sascode.executeDirectorCommand",
+  scheduleWorkUnit: "sascode.scheduleWorkUnit",
+  runWorkflow: "sascode.runWorkflow",
+  submitResult: "sascode.submitResult",
   dispatchAttempt: "sascode.dispatchAttempt",
   subscribeEvents: "sascode.subscribeEvents",
 } as const;
@@ -84,6 +95,12 @@ export const SascodeGetWorkflowInput = Schema.Struct({
   workflowId: WorkflowId,
 });
 export type SascodeGetWorkflowInput = typeof SascodeGetWorkflowInput.Type;
+
+export const SascodeRefreshProviderCapabilitiesInput = Schema.Struct({
+  occurredAt: IsoDateTime,
+});
+export type SascodeRefreshProviderCapabilitiesInput =
+  typeof SascodeRefreshProviderCapabilitiesInput.Type;
 
 export const SascodeDirectorCommand = Schema.Union([
   Schema.Struct({
@@ -161,6 +178,35 @@ export const SascodeDirectorCommandResult = Schema.Union([
 ]);
 export type SascodeDirectorCommandResult =
   typeof SascodeDirectorCommandResult.Type;
+
+export const SascodeScheduleWorkUnitInput = Schema.Struct({
+  spec: WorkUnitExecutionSpec,
+  occurredAt: IsoDateTime,
+});
+export type SascodeScheduleWorkUnitInput =
+  typeof SascodeScheduleWorkUnitInput.Type;
+
+export const SascodeScheduleWorkUnitResult = WorkUnitExecutionResult;
+export type SascodeScheduleWorkUnitResult =
+  typeof SascodeScheduleWorkUnitResult.Type;
+
+export const SascodeRunWorkflowInput = Schema.Struct({
+  workflowId: WorkflowId,
+  occurredAt: IsoDateTime,
+  limit: Schema.Number,
+});
+export type SascodeRunWorkflowInput = typeof SascodeRunWorkflowInput.Type;
+
+export const SascodeRunWorkflowResult = WorkUnitExecutionBatch;
+export type SascodeRunWorkflowResult = typeof SascodeRunWorkflowResult.Type;
+
+export const SascodeSubmitResultInput = WorkUnitResultSubmission;
+export type SascodeSubmitResultInput =
+  typeof SascodeSubmitResultInput.Type;
+
+export const SascodeSubmitResultResult = WorkUnitResultSubmissionOutcome;
+export type SascodeSubmitResultResult =
+  typeof SascodeSubmitResultResult.Type;
 
 export const SascodeDispatchAttemptInput = Schema.Struct({
   attemptId: WorkUnitAttemptId,

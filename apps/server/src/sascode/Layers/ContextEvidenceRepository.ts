@@ -6,6 +6,7 @@ import {
   QualityGateDefinition,
   QualityGateRun,
   ResultPacket,
+  ResultPacketVerification,
   SascodeResourceRef,
   SascodeUsage,
   TaskContract,
@@ -54,6 +55,10 @@ const TaskContractJsonRow = Schema.Struct({
 
 const ResultPacketJsonRow = Schema.Struct({
   packet: Schema.fromJsonString(ResultPacket),
+});
+
+const ResultVerificationJsonRow = Schema.Struct({
+  verification: Schema.fromJsonString(ResultPacketVerification),
 });
 
 const EvidenceRecordDbRow = Schema.Struct({
@@ -343,6 +348,37 @@ const makeContextEvidenceRepository = Effect.gen(function* () {
       `,
   });
 
+  const insertResultVerificationRow = SqlSchema.findOneOption({
+    Request: ResultPacketVerification,
+    Result: InsertedIdRow,
+    execute: (verification) =>
+      sql`
+        INSERT INTO sascode_result_verifications (
+          result_packet_id,
+          verification_json,
+          verified_at
+        )
+        VALUES (
+          ${verification.packet.id},
+          ${JSON.stringify(verification)},
+          ${verification.verifiedAt}
+        )
+        ON CONFLICT (result_packet_id) DO NOTHING
+        RETURNING result_packet_id AS id
+      `,
+  });
+
+  const getResultVerificationRow = SqlSchema.findOneOption({
+    Request: GetResultPacketInput,
+    Result: ResultVerificationJsonRow,
+    execute: ({ resultPacketId }) =>
+      sql`
+        SELECT verification_json AS verification
+        FROM sascode_result_verifications
+        WHERE result_packet_id = ${resultPacketId}
+      `,
+  });
+
   const insertEvidenceRecordRow = SqlSchema.findOneOption({
     Request: SaveEvidenceRecordInput,
     Result: InsertedIdRow,
@@ -577,6 +613,30 @@ const makeContextEvidenceRepository = Effect.gen(function* () {
       ),
     );
 
+  const saveResultVerification: ContextEvidenceRepositoryShape["saveResultVerification"] = (
+    verification,
+  ) =>
+    insertResultVerificationRow(verification).pipe(
+      Effect.map(Option.isSome),
+      Effect.mapError(
+        mapRepositoryError(
+          "ContextEvidenceRepository.saveResultVerification",
+        ),
+      ),
+    );
+
+  const getResultVerification: ContextEvidenceRepositoryShape["getResultVerification"] = (
+    input,
+  ) =>
+    getResultVerificationRow(input).pipe(
+      Effect.map(Option.map((row) => row.verification)),
+      Effect.mapError(
+        mapRepositoryError(
+          "ContextEvidenceRepository.getResultVerification",
+        ),
+      ),
+    );
+
   const saveEvidenceRecord: ContextEvidenceRepositoryShape["saveEvidenceRecord"] = (input) =>
     sql
       .withTransaction(
@@ -640,6 +700,8 @@ const makeContextEvidenceRepository = Effect.gen(function* () {
     saveResultPacket,
     getResultPacket,
     getResultPacketByAttempt,
+    saveResultVerification,
+    getResultVerification,
     saveEvidenceRecord,
     listEvidenceByWorkUnit,
     saveQualityGateRun,

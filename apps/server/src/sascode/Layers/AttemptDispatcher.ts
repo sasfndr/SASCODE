@@ -46,6 +46,7 @@ const renderResources = (
         .join("\n");
 
 const buildTaskPrompt = (
+  attemptId: WorkUnitAttempt["id"],
   contract: TaskContract,
   target: ResolvedModelTarget,
 ): string => `# SASCODE Sealed Task Contract
@@ -55,6 +56,7 @@ You are the assigned execution session for one immutable SASCODE work unit.
 ## Identity
 - Workflow: ${contract.workflowId}
 - Work unit: ${contract.workUnitId}
+- Attempt: ${attemptId}
 - Task contract: ${contract.id}
 - Contract digest: ${contract.digest}
 - Assigned role: ${contract.roleId}
@@ -92,6 +94,7 @@ ${contract.expectedArtifacts.map((artifact) => `- ${artifact}`).join("\n") || "-
 - Do not expand the task or modify unrelated user work.
 - Treat dependency result packets and context artifact IDs as immutable inputs.
 - Verify every required acceptance criterion.
+- If the \`synara_submit_sascode_result\` MCP tool is available, call it exactly once with the structured result packet, evidence records, and quality-gate runs before your final response. Use the immutable identity values above.
 - Finish with a structured handoff containing: summary, changed resources, commands run, evidence produced, risks, unresolved questions, and recommended next action.
 - A textual claim does not complete this work unit. SASCODE will independently validate the result packet and required evidence.
 `;
@@ -210,7 +213,11 @@ const makeAttemptDispatcher = Effect.gen(function* () {
             attemptId: attempt.id,
             projectId: workflow.projectId,
             title: `${workflow.title} · ${contract.outcome}`,
-            prompt: buildTaskPrompt(contract, decision.selected),
+            prompt: buildTaskPrompt(
+              attempt.id,
+              contract,
+              decision.selected,
+            ),
             target: decision.selected,
             environment: "worktree",
             baseRef: contract.baselineGitRef ?? null,

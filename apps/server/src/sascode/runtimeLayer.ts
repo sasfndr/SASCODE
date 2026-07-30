@@ -15,13 +15,17 @@ import { DirectorRecoveryLive } from "./Layers/DirectorRecovery.ts";
 import { DirectorThreadLauncherLive } from "./Layers/DirectorThreadLauncher.ts";
 import { DirectorWorkflowRepositoryLive } from "./Layers/DirectorWorkflowRepository.ts";
 import { DirectorLive } from "./Layers/Director.ts";
+import { ExecutionPlanRepositoryLive } from "./Layers/ExecutionPlanRepository.ts";
 import { ModelRouterLive } from "./Layers/ModelRouter.ts";
 import { ModuleRepositoryLive } from "./Layers/ModuleRepository.ts";
 import { ModuleRuntimeLive } from "./Layers/ModuleRuntime.ts";
 import { ProviderCapabilitySyncLive } from "./Layers/ProviderCapabilitySync.ts";
+import { ProviderCatalogSyncLive } from "./Layers/ProviderCatalogSync.ts";
 import { RoutingRepositoryLive } from "./Layers/RoutingRepository.ts";
+import { ResultIngestionLive } from "./Layers/ResultIngestion.ts";
 import { SascodeApiLive } from "./Layers/SascodeApi.ts";
 import { TaskContractsLive } from "./Layers/TaskContracts.ts";
+import { WorkUnitOrchestratorLive } from "./Layers/WorkUnitOrchestrator.ts";
 
 const repositoryLayer = Layer.mergeAll(
   AttentionRepositoryLive,
@@ -29,6 +33,7 @@ const repositoryLayer = Layer.mergeAll(
   CapabilityRepositoryLive,
   ContextEvidenceRepositoryLive,
   DirectorWorkflowRepositoryLive,
+  ExecutionPlanRepositoryLive,
   ModuleRepositoryLive,
   RoutingRepositoryLive,
 );
@@ -73,6 +78,10 @@ const providerCapabilitySyncLayer = ProviderCapabilitySyncLive.pipe(
   Layer.provide(repositoryLayer),
 );
 
+const providerCatalogSyncLayer = ProviderCatalogSyncLive.pipe(
+  Layer.provide(providerCapabilitySyncLayer),
+);
+
 const taskContractsLayer = TaskContractsLive.pipe(
   Layer.provide(repositoryLayer),
 );
@@ -103,6 +112,30 @@ const recoveryLayer = DirectorRecoveryLive.pipe(
   ),
 );
 
+const workUnitOrchestratorLayer = WorkUnitOrchestratorLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      attemptDispatcherLayer,
+      commandLayer,
+      modelRouterLayer,
+      repositoryLayer,
+      taskContractsLayer,
+    ),
+  ),
+);
+
+const resultIngestionLayer = ResultIngestionLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      commandLayer,
+      eventLayer,
+      executionCoordinatorLayer,
+      repositoryLayer,
+      workUnitOrchestratorLayer,
+    ),
+  ),
+);
+
 const apiLayer = SascodeApiLive.pipe(
   Layer.provide(
     Layer.mergeAll(
@@ -111,6 +144,9 @@ const apiLayer = SascodeApiLive.pipe(
       commandLayer,
       eventLayer,
       repositoryLayer,
+      resultIngestionLayer,
+      workUnitOrchestratorLayer,
+      providerCatalogSyncLayer,
     ),
   ),
 );
@@ -126,10 +162,13 @@ export const SascodeRuntimeLayerLive = Layer.mergeAll(
   moduleRuntimeLayer,
   modelRouterLayer,
   providerCapabilitySyncLayer,
+  providerCatalogSyncLayer,
   taskContractsLayer,
   executionCoordinatorLayer,
   DirectorThreadLauncherLive,
   attemptDispatcherLayer,
   recoveryLayer,
+  workUnitOrchestratorLayer,
+  resultIngestionLayer,
   apiLayer,
 );

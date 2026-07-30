@@ -48,6 +48,8 @@ import { ExternalMcpGateway } from "./externalMcp/Services/ExternalMcpGateway";
 import { ExternalMcpService } from "./externalMcp/Services/ExternalMcpService";
 import { DirectorRecovery } from "./sascode/Services/DirectorRecovery";
 import { SascodeApi } from "./sascode/Services/SascodeApi";
+import { WorkUnitOrchestrator } from "./sascode/Services/WorkUnitOrchestrator";
+import { ProviderCatalogSync } from "./sascode/Services/ProviderCatalogSync";
 
 export interface ServerShape {
   readonly start: Effect.Effect<
@@ -76,6 +78,8 @@ export interface ServerShape {
     | ServerSettingsService
     | DirectorRecovery
     | SascodeApi
+    | WorkUnitOrchestrator
+    | ProviderCatalogSync
     | ThreadDeletionReactor
     | SqlClient.SqlClient
   >;
@@ -137,6 +141,8 @@ export const createEffectServer = Effect.fn(function* (
   const runtimeStartup = yield* ServerRuntimeStartup;
   const serverSettings = yield* ServerSettingsService;
   const directorRecovery = yield* DirectorRecovery;
+  const workUnitOrchestrator = yield* WorkUnitOrchestrator;
+  const providerCatalog = yield* ProviderCatalogSync;
   const threadDeletionReactor = yield* ThreadDeletionReactor;
   const readiness = yield* makeServerReadiness;
 
@@ -150,6 +156,27 @@ export const createEffectServer = Effect.fn(function* (
     ),
   );
   yield* serverSettings.start;
+  yield* providerCatalog
+    .refresh({
+      occurredAt: new Date().toISOString(),
+      cwd: config.cwd,
+    })
+    .pipe(
+      Effect.tap((result) =>
+        result.failures.length > 0
+          ? Effect.logWarning(
+              "SASCODE could not discover every configured provider",
+              { failures: result.failures },
+            )
+          : Effect.void,
+      ),
+      Effect.catch((cause) =>
+        Effect.logWarning(
+          "SASCODE provider catalog refresh could not complete",
+          { cause },
+        ),
+      ),
+    );
   yield* readiness.markPushBusReady;
   yield* readiness.markKeybindingsReady;
 
@@ -252,6 +279,24 @@ export const createEffectServer = Effect.fn(function* (
       ),
     });
   }
+  yield* workUnitOrchestrator
+    .recover({
+      occurredAt: new Date().toISOString(),
+      limit: 1_000,
+    })
+    .pipe(
+      Effect.tap((result) =>
+        result.scheduled > 0 || result.exhausted > 0
+          ? Effect.log("SASCODE resumed durable work-unit execution", result)
+          : Effect.void,
+      ),
+      Effect.catch((cause) =>
+        Effect.logWarning(
+          "SASCODE work-unit scheduling recovery could not complete",
+          { cause },
+        ),
+      ),
+    );
   yield* runtimeStartup.markCommandReady;
 
   yield* lifecycleEvents.publish({

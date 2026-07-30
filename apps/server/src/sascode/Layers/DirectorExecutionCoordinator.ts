@@ -6,17 +6,37 @@ import {
   DirectorExecutionCoordinator,
   type DirectorExecutionCoordinatorShape,
 } from "../Services/DirectorExecutionCoordinator.ts";
+import { ContextEvidenceRepository } from "../Services/ContextEvidenceRepository.ts";
 import { DirectorWorkflowRepository } from "../Services/DirectorWorkflowRepository.ts";
 import { TaskContracts } from "../Services/TaskContracts.ts";
 
 const makeDirectorExecutionCoordinator = Effect.gen(function* () {
   const contracts = yield* TaskContracts;
+  const context = yield* ContextEvidenceRepository;
   const director = yield* Director;
   const workflows = yield* DirectorWorkflowRepository;
 
   const commitResult: DirectorExecutionCoordinatorShape["commitResult"] = (input) =>
     Effect.gen(function* () {
       const verification = yield* contracts.recordAndVerifyResult(input);
+      const verificationSaved =
+        yield* context.saveResultVerification(verification);
+      if (!verificationSaved) {
+        const existingVerification = yield* context.getResultVerification({
+          resultPacketId: input.packet.id,
+        });
+        if (
+          Option.isNone(existingVerification) ||
+          JSON.stringify(existingVerification.value) !==
+            JSON.stringify(verification)
+        ) {
+          return yield* new DirectorConcurrencyConflictError({
+            operation: "saveResultVerification",
+            entityKind: "attempt",
+            entityId: input.packet.attemptId,
+          });
+        }
+      }
       const attached = yield* workflows.attachAttemptResult({
         attemptId: input.packet.attemptId,
         resultPacketId: input.packet.id,

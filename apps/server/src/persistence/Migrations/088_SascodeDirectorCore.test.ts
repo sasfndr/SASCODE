@@ -46,6 +46,7 @@ layer("SASCODE backend migrations", (it) => {
           "sascode_provider_connections",
           "sascode_quality_gate_runs",
           "sascode_result_packets",
+          "sascode_result_verifications",
           "sascode_routing_decisions",
           "sascode_routing_policies",
           "sascode_routing_policy_bindings",
@@ -53,6 +54,7 @@ layer("SASCODE backend migrations", (it) => {
           "sascode_secret_refs",
           "sascode_step_up_requests",
           "sascode_task_contracts",
+          "sascode_work_unit_execution_specs",
         ],
       );
     }),

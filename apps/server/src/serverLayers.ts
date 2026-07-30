@@ -164,6 +164,13 @@ export function makeServerRuntimeServicesLayer(
     Layer.provideMerge(ServerSettingsLive),
     Layer.provideMerge(providerHealthLayer),
   );
+  const sascodeLayer = SascodeRuntimeLayerLive.pipe(
+    Layer.provideMerge(runtimeServicesLayer),
+    Layer.provideMerge(GitCoreLive),
+    Layer.provideMerge(AgentGatewayOperationRepositoryLive),
+    Layer.provideMerge(ServerSettingsLive),
+    Layer.provideMerge(providerHealthLayer),
+  );
   const agentGatewayLayer = AgentGatewayLive.pipe(
     Layer.provideMerge(agentGatewayCredentialsLayer),
     Layer.provideMerge(automationServiceLayer),
@@ -177,13 +184,7 @@ export function makeServerRuntimeServicesLayer(
     Layer.provideMerge(ServerSettingsLive),
     Layer.provideMerge(providerHealthLayer),
     Layer.provideMerge(BrowserAutomationHostLive),
-  );
-  const sascodeLayer = SascodeRuntimeLayerLive.pipe(
-    Layer.provideMerge(runtimeServicesLayer),
-    Layer.provideMerge(GitCoreLive),
-    Layer.provideMerge(AgentGatewayOperationRepositoryLive),
-    Layer.provideMerge(ServerSettingsLive),
-    Layer.provideMerge(providerHealthLayer),
+    Layer.provideMerge(sascodeLayer),
   );
   const pullRequestServiceLayer = PullRequestServiceLive.pipe(
     Layer.provideMerge(GitLayerLive),

@@ -14,6 +14,9 @@ import { DirectorWorkflowRepository } from "../Services/DirectorWorkflowReposito
 import { ModuleRepository } from "../Services/ModuleRepository.ts";
 import { RoutingRepository } from "../Services/RoutingRepository.ts";
 import { SascodeApi, type SascodeApiShape } from "../Services/SascodeApi.ts";
+import { WorkUnitOrchestrator } from "../Services/WorkUnitOrchestrator.ts";
+import { ResultIngestion } from "../Services/ResultIngestion.ts";
+import { ProviderCatalogSync } from "../Services/ProviderCatalogSync.ts";
 
 const makeSascodeApi = Effect.gen(function* () {
   const attempts = yield* AttemptDispatcher;
@@ -25,6 +28,9 @@ const makeSascodeApi = Effect.gen(function* () {
   const modules = yield* ModuleRepository;
   const routing = yield* RoutingRepository;
   const workflows = yield* DirectorWorkflowRepository;
+  const orchestrator = yield* WorkUnitOrchestrator;
+  const resultIngestion = yield* ResultIngestion;
+  const providerCatalog = yield* ProviderCatalogSync;
 
   const getWorkspaceSnapshot: SascodeApiShape["getWorkspaceSnapshot"] = (
     input,
@@ -86,6 +92,9 @@ const makeSascodeApi = Effect.gen(function* () {
 
   const listProviderCapabilities: SascodeApiShape["listProviderCapabilities"] =
     () => routing.listCurrentCapabilitySnapshots();
+
+  const refreshProviderCapabilities: SascodeApiShape["refreshProviderCapabilities"] =
+    (input) => providerCatalog.refresh(input);
 
   const listEvents: SascodeApiShape["listEvents"] = (input) =>
     events.listEvents(input);
@@ -164,6 +173,23 @@ const makeSascodeApi = Effect.gen(function* () {
   const dispatchAttempt: SascodeApiShape["dispatchAttempt"] = (input) =>
     attempts.dispatch(input);
 
+  const scheduleWorkUnit: SascodeApiShape["scheduleWorkUnit"] = (input) =>
+    orchestrator.schedule({
+      ...input,
+      actorId: "session-owner",
+    });
+
+  const runWorkflow: SascodeApiShape["runWorkflow"] = (input) =>
+    orchestrator.runWorkflow(input);
+
+  const submitResult: SascodeApiShape["submitResult"] = (input) =>
+    resultIngestion.submit({
+      submission: input,
+      actorKind: "human",
+      actorId: "session-owner",
+      expectedThreadId: null,
+    });
+
   const subscribeEvents: SascodeApiShape["subscribeEvents"] = (input) =>
     Stream.unwrapScoped(
       Effect.gen(function* () {
@@ -202,8 +228,12 @@ const makeSascodeApi = Effect.gen(function* () {
     getProjectSnapshot,
     getWorkflow,
     listProviderCapabilities,
+    refreshProviderCapabilities,
     listEvents,
     executeDirectorCommand,
+    scheduleWorkUnit,
+    runWorkflow,
+    submitResult,
     dispatchAttempt,
     subscribeEvents,
   } satisfies SascodeApiShape;

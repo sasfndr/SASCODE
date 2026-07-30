@@ -190,6 +190,7 @@ import {
 import {
   DirectorEvent,
   ProviderCapabilitySnapshot,
+  ProviderCatalogRefreshResult,
   SASCODE_WS_METHODS,
   SascodeDirectorCommand,
   SascodeDirectorCommandResult,
@@ -200,6 +201,13 @@ import {
   SascodeGetWorkspaceSnapshotInput,
   SascodeListEventsInput,
   SascodeProjectSnapshot,
+  SascodeRefreshProviderCapabilitiesInput,
+  SascodeRunWorkflowInput,
+  SascodeRunWorkflowResult,
+  SascodeScheduleWorkUnitInput,
+  SascodeScheduleWorkUnitResult,
+  SascodeSubmitResultInput,
+  SascodeSubmitResultResult,
   SascodeSubscribeEventsInput,
   SascodeWorkspaceSnapshot,
   Workflow,
@@ -391,6 +399,15 @@ export const WsSascodeListProviderCapabilitiesRpc = Rpc.make(
   },
 );
 
+export const WsSascodeRefreshProviderCapabilitiesRpc = Rpc.make(
+  SASCODE_WS_METHODS.refreshProviderCapabilities,
+  {
+    payload: SascodeRefreshProviderCapabilitiesInput,
+    success: ProviderCatalogRefreshResult,
+    error: WsRpcError,
+  },
+);
+
 export const WsSascodeListEventsRpc = Rpc.make(
   SASCODE_WS_METHODS.listEvents,
   {
@@ -405,6 +422,33 @@ export const WsSascodeExecuteDirectorCommandRpc = Rpc.make(
   {
     payload: SascodeDirectorCommand,
     success: SascodeDirectorCommandResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeScheduleWorkUnitRpc = Rpc.make(
+  SASCODE_WS_METHODS.scheduleWorkUnit,
+  {
+    payload: SascodeScheduleWorkUnitInput,
+    success: SascodeScheduleWorkUnitResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeRunWorkflowRpc = Rpc.make(
+  SASCODE_WS_METHODS.runWorkflow,
+  {
+    payload: SascodeRunWorkflowInput,
+    success: SascodeRunWorkflowResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeSubmitResultRpc = Rpc.make(
+  SASCODE_WS_METHODS.submitResult,
+  {
+    payload: SascodeSubmitResultInput,
+    success: SascodeSubmitResultResult,
     error: WsRpcError,
   },
 );
@@ -1090,8 +1134,12 @@ export const WsFeatureRpcGroup = RpcGroup.make(
   WsSascodeGetProjectSnapshotRpc,
   WsSascodeGetWorkflowRpc,
   WsSascodeListProviderCapabilitiesRpc,
+  WsSascodeRefreshProviderCapabilitiesRpc,
   WsSascodeListEventsRpc,
   WsSascodeExecuteDirectorCommandRpc,
+  WsSascodeScheduleWorkUnitRpc,
+  WsSascodeRunWorkflowRpc,
+  WsSascodeSubmitResultRpc,
   WsSascodeDispatchAttemptRpc,
   WsSascodeSubscribeEventsRpc,
   WsProjectsDiscoverScriptsRpc,

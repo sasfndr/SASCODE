@@ -125,7 +125,7 @@ const makeDirectorThreadLauncher = Effect.gen(function* () {
               ),
             }),
       };
-      const modelSelection = yield* Schema.decodeUnknown(ModelSelection)(
+      const modelSelection = yield* Schema.decodeUnknownEffect(ModelSelection)(
         rawTarget,
       ).pipe(
         Effect.mapError(
@@ -187,7 +187,7 @@ const makeDirectorThreadLauncher = Effect.gen(function* () {
             operationMayHaveCommitted: true,
           }),
       });
-      const result = yield* Schema.decodeUnknown(SynaraCreateThreadsResult)(
+      const result = yield* Schema.decodeUnknownEffect(SynaraCreateThreadsResult)(
         parsed,
       ).pipe(
         Effect.mapError(
