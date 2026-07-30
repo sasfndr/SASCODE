@@ -1,4 +1,6 @@
 import {
+  AgentRoleId,
+  RoutingPolicyId,
   WorkflowId,
   WorkUnitId,
 } from "@synara/contracts";
@@ -94,3 +96,75 @@ export type DirectorDomainError =
   | DirectorStateTransitionError
   | DirectorConcurrencyConflictError
   | DirectorIdentityConflictError;
+
+export class RoutingPolicyNotFoundError extends Schema.TaggedErrorClass<RoutingPolicyNotFoundError>()(
+  "RoutingPolicyNotFoundError",
+  {
+    policyId: RoutingPolicyId,
+    revision: Schema.Number,
+  },
+) {
+  override get message(): string {
+    return `Routing policy ${this.policyId} revision ${this.revision} does not exist.`;
+  }
+}
+
+export class RoutingRoleNotFoundError extends Schema.TaggedErrorClass<RoutingRoleNotFoundError>()(
+  "RoutingRoleNotFoundError",
+  {
+    policyId: RoutingPolicyId,
+    revision: Schema.Number,
+    roleId: AgentRoleId,
+  },
+) {
+  override get message(): string {
+    return (
+      `Role ${this.roleId} does not exist in routing policy ` +
+      `${this.policyId} revision ${this.revision}.`
+    );
+  }
+}
+
+export class NoEligibleRoutingTargetError extends Schema.TaggedErrorClass<NoEligibleRoutingTargetError>()(
+  "NoEligibleRoutingTargetError",
+  {
+    workflowId: WorkflowId,
+    workUnitId: WorkUnitId,
+    reasons: Schema.Array(Schema.String),
+  },
+) {
+  override get message(): string {
+    return `No model is eligible for work unit ${this.workUnitId}: ${this.reasons.join(" ")}`;
+  }
+}
+
+export class RoutingInvariantError extends Schema.TaggedErrorClass<RoutingInvariantError>()(
+  "RoutingInvariantError",
+  {
+    workUnitId: WorkUnitId,
+    detail: Schema.String,
+  },
+) {
+  override get message(): string {
+    return `Cannot route work unit ${this.workUnitId}: ${this.detail}`;
+  }
+}
+
+export class RoutingDecisionConflictError extends Schema.TaggedErrorClass<RoutingDecisionConflictError>()(
+  "RoutingDecisionConflictError",
+  {
+    decisionId: Schema.String,
+  },
+) {
+  override get message(): string {
+    return `Routing decision ${this.decisionId} already exists and is immutable.`;
+  }
+}
+
+export type ModelRouterDomainError =
+  | DirectorEntityNotFoundError
+  | RoutingPolicyNotFoundError
+  | RoutingRoleNotFoundError
+  | NoEligibleRoutingTargetError
+  | RoutingInvariantError
+  | RoutingDecisionConflictError;
