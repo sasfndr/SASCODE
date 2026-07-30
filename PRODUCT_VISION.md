@@ -7,6 +7,8 @@
 - **Product name:** SASCODE
 - **Foundation:** A commercial, independently branded fork of Synara
 - **Design authority:** [`CLAUDE.md`](./CLAUDE.md)
+- **Backend implementation contract:** [`BACKEND_HANDOFF.md`](./BACKEND_HANDOFF.md)
+- **Frontend execution brief:** [`CLAUDE_FRONTEND_BUILD_PROMPT.md`](./CLAUDE_FRONTEND_BUILD_PROMPT.md)
 - **Audience:** Founder, product designer, frontend implementer, backend implementer, future contributors, and future investors
 
 ---
@@ -21,6 +23,8 @@ The two documents have different jobs:
 
 - `CLAUDE.md` is the authority for brand, aesthetics, UI, UX, motion, layout, and frontend behavior.
 - `PRODUCT_VISION.md` is the authority for product strategy, market position, feature hierarchy, orchestration, browser architecture, security, technical direction, roadmap, and business model.
+- `BACKEND_HANDOFF.md` is the authority for the implemented backend, typed renderer API, runtime boundaries, and frontend integration behavior.
+- `CLAUDE_FRONTEND_BUILD_PROMPT.md` is the execution brief for building the production Stillspace frontend.
 
 When the two documents appear to conflict:
 

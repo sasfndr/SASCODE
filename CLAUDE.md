@@ -905,33 +905,51 @@ Keep these concerns separable:
 
 ### Backend boundary
 
-The backend will be developed separately.
+The SASCODE backend is implemented. Read `BACKEND_HANDOFF.md` before changing
+the renderer.
 
-Frontend code should:
+The canonical frontend client is:
 
-- Define typed service interfaces.
-- Consume normalized project and session state.
-- Accept event streams.
-- Use adapters for mock fixtures.
-- Avoid embedding orchestration rules in UI components.
-- Avoid hard-coding model behavior.
-- Avoid assuming one provider.
+```ts
+const sascode = ensureNativeApi().sascode;
+```
 
-Expected future data domains:
+Its stable typed contract is `SascodeClientApi` in
+`packages/contracts/src/sascode/api.ts`. The Effect RPC group is registered in
+`packages/contracts/src/rpc.ts`; the WebSocket adapter is complete in
+`apps/web/src/wsNativeApi.ts` and `apps/web/src/wsTransport.ts`.
 
-- Projects.
-- Sessions.
-- Agents and models.
-- Tasks.
-- Tool calls.
-- File changes.
-- Approvals.
-- Handoffs.
-- Live events.
-- Layouts.
-- Themes.
-- Module permissions.
-- Media integrations.
+Frontend code must:
+
+- Consume the real typed API and normalized Synara orchestration state.
+- Use the Director event subscription for replay-then-live workflow updates.
+- Use TanStack Query or focused adapters around `NativeApi.sascode`.
+- Keep mock fixtures inside tests, stories, or explicit development previews.
+- Avoid embedding orchestration, readiness, routing, permission, retry, or
+  workflow-completion rules in UI components.
+- Avoid hard-coding model behavior or assuming one provider.
+- Treat routing decisions, permission decisions, attention snapshots, browser
+  ownership, module activation, and layout revisions as backend truth.
+- Preserve the existing chat, terminal, diff, Git, browser, provider,
+  authentication, settings, diagnostics, and recovery capabilities while
+  replacing the primary navigation shell.
+
+Implemented data domains include:
+
+- Projects and sessions.
+- Workflows, work units, attempts, and provider threads.
+- Agents, providers, models, routing policies, routing decisions, and overrides.
+- Tool calls, file changes, approvals, user input, and handoffs.
+- Context, evidence, quality gates, and immutable result packets.
+- Live Director events and cross-project attention.
+- Durable layouts and Stillspace theme settings.
+- Permission grants, boundaries, step-up outcomes, and audit records.
+- Browser profiles, instances, ownership, and evidence.
+- Module manifests, instances, permissions, and placement state.
+
+Do not create a parallel frontend-only backend model. `BACKEND_HANDOFF.md`
+defines the required joins, lifecycle, API surface, recovery behavior, and
+known adapter boundaries.
 
 ### Performance
 
