@@ -1,6 +1,11 @@
 import * as Crypto from "node:crypto";
 
-import { ORCHESTRATION_WS_METHODS, WS_METHODS, WsRpcError } from "@synara/contracts";
+import {
+  ORCHESTRATION_WS_METHODS,
+  SASCODE_WS_METHODS,
+  WS_METHODS,
+  WsRpcError,
+} from "@synara/contracts";
 import { Effect, Ref } from "effect";
 
 export type WsRequestClass = "control" | "standard" | "expensive-read";
@@ -14,6 +19,8 @@ export const WS_REQUEST_CLASS_LIMITS: Readonly<Record<WsRequestClass, number>> =
 const CONTROL_METHODS = new Set<string>([
   ORCHESTRATION_WS_METHODS.dispatchCommand,
   ORCHESTRATION_WS_METHODS.reconcileProviderDelivery,
+  SASCODE_WS_METHODS.executeDirectorCommand,
+  SASCODE_WS_METHODS.dispatchAttempt,
   WS_METHODS.terminalWrite,
   WS_METHODS.terminalAckOutput,
   WS_METHODS.terminalResize,
@@ -32,6 +39,9 @@ const EXPENSIVE_READ_METHODS = new Set<string>([
   ORCHESTRATION_WS_METHODS.getFullThreadDiff,
   ORCHESTRATION_WS_METHODS.replayEvents,
   ORCHESTRATION_WS_METHODS.listProviderDeliveryBlockers,
+  SASCODE_WS_METHODS.getWorkspaceSnapshot,
+  SASCODE_WS_METHODS.getProjectSnapshot,
+  SASCODE_WS_METHODS.listEvents,
   WS_METHODS.projectsSearchEntries,
   WS_METHODS.projectsSearchLocalEntries,
   WS_METHODS.projectsReadFile,

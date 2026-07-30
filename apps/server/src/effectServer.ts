@@ -46,6 +46,8 @@ import { recoverGitHandoffOperations } from "./gitHandoffOperations";
 import { externalMcpRouteLayer } from "./externalMcp/httpRoute";
 import { ExternalMcpGateway } from "./externalMcp/Services/ExternalMcpGateway";
 import { ExternalMcpService } from "./externalMcp/Services/ExternalMcpService";
+import { DirectorRecovery } from "./sascode/Services/DirectorRecovery";
+import { SascodeApi } from "./sascode/Services/SascodeApi";
 
 export interface ServerShape {
   readonly start: Effect.Effect<
@@ -72,6 +74,8 @@ export interface ServerShape {
     | ProviderService
     | ServerRuntimeStartup
     | ServerSettingsService
+    | DirectorRecovery
+    | SascodeApi
     | ThreadDeletionReactor
     | SqlClient.SqlClient
   >;
@@ -132,6 +136,7 @@ export const createEffectServer = Effect.fn(function* (
   const providerRuntimeReconciler = yield* ProviderRuntimeReconciler;
   const runtimeStartup = yield* ServerRuntimeStartup;
   const serverSettings = yield* ServerSettingsService;
+  const directorRecovery = yield* DirectorRecovery;
   const threadDeletionReactor = yield* ThreadDeletionReactor;
   const readiness = yield* makeServerReadiness;
 
@@ -223,6 +228,30 @@ export const createEffectServer = Effect.fn(function* (
       (cause) => new ServerLifecycleError({ operation: "recoverGitHandoffOperations", cause }),
     ),
   );
+  const sascodeRecovery = yield* directorRecovery
+    .recover({
+      occurredAt: new Date().toISOString(),
+      limit: 1_000,
+    })
+    .pipe(
+      Effect.mapError(
+        (cause) =>
+          new ServerLifecycleError({
+            operation: "recoverSascodeDirectorAttempts",
+            cause,
+          }),
+      ),
+    );
+  if (sascodeRecovery.failed > 0) {
+    yield* Effect.logWarning("SASCODE Director recovery left attempts pending", {
+      scanned: sascodeRecovery.scanned,
+      recovered: sascodeRecovery.recovered,
+      failed: sascodeRecovery.failed,
+      outcomes: sascodeRecovery.outcomes.filter(
+        (outcome) => !outcome.recovered,
+      ),
+    });
+  }
   yield* runtimeStartup.markCommandReady;
 
   yield* lifecycleEvents.publish({

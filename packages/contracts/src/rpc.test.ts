@@ -12,6 +12,7 @@ import {
   WsRpcGroup,
 } from "./rpc";
 import { ORCHESTRATION_WS_METHODS } from "./orchestration";
+import { SASCODE_WS_METHODS } from "./sascode";
 
 describe("WS RPC contracts", () => {
   it("exports the additive Effect RPC group", () => {
@@ -24,6 +25,8 @@ describe("WS RPC contracts", () => {
     expect(WsFeatureRpcGroup.requests.has(ORCHESTRATION_WS_METHODS.reconcileProviderDelivery)).toBe(
       true,
     );
+    expect(WsFeatureRpcGroup.requests.has(SASCODE_WS_METHODS.getProjectSnapshot)).toBe(true);
+    expect(WsFeatureRpcGroup.requests.has(SASCODE_WS_METHODS.subscribeEvents)).toBe(true);
   });
 
   it("uses a schema-backed transport error", () => {

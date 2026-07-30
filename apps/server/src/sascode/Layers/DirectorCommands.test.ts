@@ -8,7 +8,7 @@ import {
   type Workflow,
 } from "@synara/contracts";
 import { assert, it } from "@effect/vitest";
-import { Effect, Layer, Option } from "effect";
+import { Effect, Layer, Option, Stream } from "effect";
 
 import { SqlitePersistenceMemory } from "../../persistence/Layers/Sqlite.ts";
 import { DirectorCommands } from "../Services/DirectorCommands.ts";
@@ -98,13 +98,23 @@ commandLayer("DirectorCommands", (it) => {
     Effect.gen(function* () {
       const commands = yield* DirectorCommands;
       const events = yield* DirectorEventStore;
-
-      const committed = yield* commands.proposeWorkflow({
-        context: commandContext,
-        workflow: makeWorkflow(),
-      });
+      const live = yield* events.subscribeEvents;
+      const [liveEvent, committed] = yield* Effect.all(
+        [
+          Stream.runHead(live),
+          commands.proposeWorkflow({
+            context: commandContext,
+            workflow: makeWorkflow(),
+          }),
+        ],
+        { concurrency: "unbounded" },
+      );
       assert.isFalse(committed.replayed);
       assert.strictEqual(committed.event.streamVersion, 1);
+      assert.strictEqual(
+        Option.getOrThrow(liveEvent).sequence,
+        committed.event.sequence,
+      );
 
       const replayed = yield* commands.proposeWorkflow({
         context: commandContext,

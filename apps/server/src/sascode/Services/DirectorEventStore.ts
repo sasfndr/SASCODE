@@ -11,7 +11,7 @@ import type {
   ProjectId,
 } from "@synara/contracts";
 import { Option, ServiceMap } from "effect";
-import type { Effect } from "effect";
+import type { Effect, Scope, Stream } from "effect";
 
 import type { ProjectionRepositoryError } from "../../persistence/Errors.ts";
 import type {
@@ -62,6 +62,17 @@ export interface DirectorEventStoreShape {
   readonly listEvents: (
     cursor: DirectorEventCursor,
   ) => Effect.Effect<ReadonlyArray<DirectorEvent>, ProjectionRepositoryError>;
+
+  readonly getHighWaterSequence: Effect.Effect<
+    number,
+    ProjectionRepositoryError
+  >;
+
+  readonly subscribeEvents: Effect.Effect<
+    Stream.Stream<DirectorEvent>,
+    never,
+    Scope.Scope
+  >;
 }
 
 export class DirectorEventStore extends ServiceMap.Service<

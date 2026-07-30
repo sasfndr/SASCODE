@@ -5,7 +5,15 @@ import {
   DirectorEvent,
   DirectorEventId,
 } from "@synara/contracts";
-import { Effect, Layer, Option, Schema, Struct } from "effect";
+import {
+  Effect,
+  Layer,
+  Option,
+  PubSub,
+  Schema,
+  Stream,
+  Struct,
+} from "effect";
 import * as SqlClient from "effect/unstable/sql/SqlClient";
 import * as SqlSchema from "effect/unstable/sql/SqlSchema";
 
@@ -59,6 +67,7 @@ const DirectorEventDbRow = DirectorEvent.mapFields(
 
 const makeDirectorEventStore = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
+  const eventPubSub = yield* PubSub.bounded<DirectorEvent>(2_048);
 
   const getReceiptRow = SqlSchema.findOneOption({
     Request: Schema.Struct({
@@ -184,6 +193,26 @@ const makeDirectorEventStore = Effect.gen(function* () {
           "DirectorEventStore.listEvents:query",
           "DirectorEventStore.listEvents:decode",
         ),
+      ),
+    );
+
+  const getHighWaterSequence: DirectorEventStoreShape["getHighWaterSequence"] =
+    sql<{ readonly sequence: number }>`
+      SELECT COALESCE(MAX(sequence), 0) AS sequence
+      FROM sascode_director_events
+    `.pipe(
+      Effect.map((rows) => rows[0]?.sequence ?? 0),
+      Effect.mapError(
+        toPersistenceSqlError(
+          "DirectorEventStore.getHighWaterSequence:query",
+        ),
+      ),
+    );
+
+  const subscribeEvents: DirectorEventStoreShape["subscribeEvents"] =
+    PubSub.subscribe(eventPubSub).pipe(
+      Effect.map((subscription) =>
+        Stream.fromEffectRepeat(PubSub.take(subscription)),
       ),
     );
 
@@ -326,6 +355,13 @@ const makeDirectorEventStore = Effect.gen(function* () {
             ),
           ),
         ),
+        Effect.tap((outcome) =>
+          outcome.kind === "committed"
+            ? Effect.uninterruptible(
+                PubSub.publish(eventPubSub, outcome.event),
+              ).pipe(Effect.asVoid)
+            : Effect.void,
+        ),
       );
   };
 
@@ -333,6 +369,8 @@ const makeDirectorEventStore = Effect.gen(function* () {
     commitCommand,
     getReceipt,
     listEvents,
+    getHighWaterSequence,
+    subscribeEvents,
   } satisfies DirectorEventStoreShape;
 });
 

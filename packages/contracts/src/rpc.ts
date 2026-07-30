@@ -187,6 +187,23 @@ import {
   StatsGetProfileTokenStatsInput,
   StatsGetProfileTokenStatsResult,
 } from "./stats";
+import {
+  DirectorEvent,
+  ProviderCapabilitySnapshot,
+  SASCODE_WS_METHODS,
+  SascodeDirectorCommand,
+  SascodeDirectorCommandResult,
+  SascodeDispatchAttemptInput,
+  SascodeDispatchAttemptResult,
+  SascodeGetProjectSnapshotInput,
+  SascodeGetWorkflowInput,
+  SascodeGetWorkspaceSnapshotInput,
+  SascodeListEventsInput,
+  SascodeProjectSnapshot,
+  SascodeSubscribeEventsInput,
+  SascodeWorkspaceSnapshot,
+  Workflow,
+} from "./sascode";
 import { WS_METHODS } from "./ws";
 import {
   WS_BOOTSTRAP_METHOD,
@@ -335,6 +352,79 @@ export const WsOrchestrationUnsubscribeThreadRpc = Rpc.make(
     payload: OrchestrationRpcSchemas.unsubscribeThread.input,
     success: Schema.Void,
     error: WsRpcError,
+  },
+);
+
+export const WsSascodeGetWorkspaceSnapshotRpc = Rpc.make(
+  SASCODE_WS_METHODS.getWorkspaceSnapshot,
+  {
+    payload: SascodeGetWorkspaceSnapshotInput,
+    success: SascodeWorkspaceSnapshot,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeGetProjectSnapshotRpc = Rpc.make(
+  SASCODE_WS_METHODS.getProjectSnapshot,
+  {
+    payload: SascodeGetProjectSnapshotInput,
+    success: SascodeProjectSnapshot,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeGetWorkflowRpc = Rpc.make(
+  SASCODE_WS_METHODS.getWorkflow,
+  {
+    payload: SascodeGetWorkflowInput,
+    success: Schema.NullOr(Workflow),
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeListProviderCapabilitiesRpc = Rpc.make(
+  SASCODE_WS_METHODS.listProviderCapabilities,
+  {
+    payload: Schema.Struct({}),
+    success: Schema.Array(ProviderCapabilitySnapshot),
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeListEventsRpc = Rpc.make(
+  SASCODE_WS_METHODS.listEvents,
+  {
+    payload: SascodeListEventsInput,
+    success: Schema.Array(DirectorEvent),
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeExecuteDirectorCommandRpc = Rpc.make(
+  SASCODE_WS_METHODS.executeDirectorCommand,
+  {
+    payload: SascodeDirectorCommand,
+    success: SascodeDirectorCommandResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeDispatchAttemptRpc = Rpc.make(
+  SASCODE_WS_METHODS.dispatchAttempt,
+  {
+    payload: SascodeDispatchAttemptInput,
+    success: SascodeDispatchAttemptResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeSubscribeEventsRpc = Rpc.make(
+  SASCODE_WS_METHODS.subscribeEvents,
+  {
+    payload: SascodeSubscribeEventsInput,
+    success: DirectorEvent,
+    error: WsRpcError,
+    stream: true,
   },
 );
 
@@ -996,6 +1086,14 @@ export const WsFeatureRpcGroup = RpcGroup.make(
   WsOrchestrationSubscribeThreadRpc,
   WsOrchestrationUnsubscribeThreadRpc,
   WsOrchestrationSubscribeDomainEventsRpc,
+  WsSascodeGetWorkspaceSnapshotRpc,
+  WsSascodeGetProjectSnapshotRpc,
+  WsSascodeGetWorkflowRpc,
+  WsSascodeListProviderCapabilitiesRpc,
+  WsSascodeListEventsRpc,
+  WsSascodeExecuteDirectorCommandRpc,
+  WsSascodeDispatchAttemptRpc,
+  WsSascodeSubscribeEventsRpc,
   WsProjectsDiscoverScriptsRpc,
   WsProjectsListDirectoriesRpc,
   WsProjectsSearchEntriesRpc,
