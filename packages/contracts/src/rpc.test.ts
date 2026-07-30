@@ -28,6 +28,9 @@ describe("WS RPC contracts", () => {
     expect(WsFeatureRpcGroup.requests.has(SASCODE_WS_METHODS.getProjectSnapshot)).toBe(true);
     expect(WsFeatureRpcGroup.requests.has(SASCODE_WS_METHODS.scheduleWorkUnit)).toBe(true);
     expect(WsFeatureRpcGroup.requests.has(SASCODE_WS_METHODS.subscribeEvents)).toBe(true);
+    expect(WsFeatureRpcGroup.requests.has(SASCODE_WS_METHODS.publishRoutingPolicy)).toBe(true);
+    expect(WsFeatureRpcGroup.requests.has(SASCODE_WS_METHODS.savePermissionGrant)).toBe(true);
+    expect(WsFeatureRpcGroup.requests.has(SASCODE_WS_METHODS.activateModule)).toBe(true);
   });
 
   it("uses a schema-backed transport error", () => {

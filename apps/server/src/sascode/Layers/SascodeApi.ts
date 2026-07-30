@@ -7,11 +7,14 @@ import { Effect, Layer, Option, Stream } from "effect";
 import { AttemptDispatcher } from "../Services/AttemptDispatcher.ts";
 import { AttentionEngine } from "../Services/AttentionEngine.ts";
 import { BrowserWorkspaceRepository } from "../Services/BrowserWorkspaceRepository.ts";
+import { BrowserWorkspace } from "../Services/BrowserWorkspace.ts";
 import { CapabilityRepository } from "../Services/CapabilityRepository.ts";
+import { ContextEvidenceRepository } from "../Services/ContextEvidenceRepository.ts";
 import { DirectorCommands } from "../Services/DirectorCommands.ts";
 import { DirectorEventStore } from "../Services/DirectorEventStore.ts";
 import { DirectorWorkflowRepository } from "../Services/DirectorWorkflowRepository.ts";
 import { ModuleRepository } from "../Services/ModuleRepository.ts";
+import { ModuleRuntime } from "../Services/ModuleRuntime.ts";
 import { RoutingRepository } from "../Services/RoutingRepository.ts";
 import { SascodeApi, type SascodeApiShape } from "../Services/SascodeApi.ts";
 import { WorkUnitOrchestrator } from "../Services/WorkUnitOrchestrator.ts";
@@ -22,10 +25,13 @@ const makeSascodeApi = Effect.gen(function* () {
   const attempts = yield* AttemptDispatcher;
   const attention = yield* AttentionEngine;
   const browsers = yield* BrowserWorkspaceRepository;
+  const browserWorkspace = yield* BrowserWorkspace;
   const capabilities = yield* CapabilityRepository;
+  const context = yield* ContextEvidenceRepository;
   const commands = yield* DirectorCommands;
   const events = yield* DirectorEventStore;
   const modules = yield* ModuleRepository;
+  const moduleRuntime = yield* ModuleRuntime;
   const routing = yield* RoutingRepository;
   const workflows = yield* DirectorWorkflowRepository;
   const orchestrator = yield* WorkUnitOrchestrator;
@@ -223,6 +229,47 @@ const makeSascodeApi = Effect.gen(function* () {
       }),
     );
 
+  const publishRoutingPolicy: SascodeApiShape["publishRoutingPolicy"] = (
+    input,
+  ) => routing.publishPolicy(input);
+
+  const upsertContextArtifact: SascodeApiShape["upsertContextArtifact"] = (
+    input,
+  ) => context.upsertContextArtifact(input);
+
+  const savePermissionGrant: SascodeApiShape["savePermissionGrant"] = (
+    input,
+  ) => capabilities.saveGrant(input);
+
+  const saveBrowserProfile: SascodeApiShape["saveBrowserProfile"] = (
+    input,
+  ) => browserWorkspace.saveProfile(input);
+
+  const createBrowserInstance: SascodeApiShape["createBrowserInstance"] = (
+    input,
+  ) => browserWorkspace.createInstance(input);
+
+  const acquireBrowserControl: SascodeApiShape["acquireBrowserControl"] = (
+    input,
+  ) => browserWorkspace.acquireControl(input);
+
+  const releaseBrowserControl: SascodeApiShape["releaseBrowserControl"] = (
+    input,
+  ) => browserWorkspace.releaseControl(input);
+
+  const updateBrowserInstance: SascodeApiShape["updateBrowserInstance"] = (
+    input,
+  ) => browserWorkspace.updateInstance(input);
+
+  const installModule: SascodeApiShape["installModule"] = (input) =>
+    moduleRuntime.install(input);
+
+  const instantiateModule: SascodeApiShape["instantiateModule"] = (input) =>
+    moduleRuntime.instantiate(input);
+
+  const activateModule: SascodeApiShape["activateModule"] = (input) =>
+    moduleRuntime.activate(input);
+
   return {
     getWorkspaceSnapshot,
     getProjectSnapshot,
@@ -236,6 +283,17 @@ const makeSascodeApi = Effect.gen(function* () {
     submitResult,
     dispatchAttempt,
     subscribeEvents,
+    publishRoutingPolicy,
+    upsertContextArtifact,
+    savePermissionGrant,
+    saveBrowserProfile,
+    createBrowserInstance,
+    acquireBrowserControl,
+    releaseBrowserControl,
+    updateBrowserInstance,
+    installModule,
+    instantiateModule,
+    activateModule,
   } satisfies SascodeApiShape;
 });
 

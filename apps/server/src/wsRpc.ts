@@ -1044,6 +1044,83 @@ const makeWsRpcHandlersLayer = () =>
             ),
             "Failed to dispatch the SASCODE attempt",
           ),
+        [SASCODE_WS_METHODS.publishRoutingPolicy]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.publishRoutingPolicy(input)),
+            ),
+            "Failed to publish the SASCODE routing policy",
+          ),
+        [SASCODE_WS_METHODS.upsertContextArtifact]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.upsertContextArtifact(input)),
+            ),
+            "Failed to upsert the SASCODE context artifact",
+          ),
+        [SASCODE_WS_METHODS.savePermissionGrant]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.savePermissionGrant(input)),
+            ),
+            "Failed to save the SASCODE permission grant",
+          ),
+        [SASCODE_WS_METHODS.saveBrowserProfile]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.saveBrowserProfile(input)),
+            ),
+            "Failed to save the SASCODE browser profile",
+          ),
+        [SASCODE_WS_METHODS.createBrowserInstance]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.createBrowserInstance(input)),
+            ),
+            "Failed to create the SASCODE browser instance",
+          ),
+        [SASCODE_WS_METHODS.acquireBrowserControl]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.acquireBrowserControl(input)),
+            ),
+            "Failed to acquire SASCODE browser control",
+          ),
+        [SASCODE_WS_METHODS.releaseBrowserControl]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.releaseBrowserControl(input)),
+            ),
+            "Failed to release SASCODE browser control",
+          ),
+        [SASCODE_WS_METHODS.updateBrowserInstance]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.updateBrowserInstance(input)),
+            ),
+            "Failed to update the SASCODE browser instance",
+          ),
+        [SASCODE_WS_METHODS.installModule]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.installModule(input)),
+            ),
+            "Failed to install the SASCODE module",
+          ),
+        [SASCODE_WS_METHODS.instantiateModule]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.instantiateModule(input)),
+            ),
+            "Failed to instantiate the SASCODE module",
+          ),
+        [SASCODE_WS_METHODS.activateModule]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.activateModule(input)),
+            ),
+            "Failed to activate the SASCODE module",
+          ),
         [SASCODE_WS_METHODS.subscribeEvents]: (input, { clientId }) =>
           streamAdmission.guard(
             clientId,

@@ -141,10 +141,12 @@ const apiLayer = SascodeApiLive.pipe(
     Layer.mergeAll(
       attemptDispatcherLayer,
       attentionEngineLayer,
+      browserWorkspaceLayer,
       commandLayer,
       eventLayer,
       repositoryLayer,
       resultIngestionLayer,
+      moduleRuntimeLayer,
       workUnitOrchestratorLayer,
       providerCatalogSyncLayer,
     ),

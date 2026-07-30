@@ -192,6 +192,11 @@ import {
   ProviderCapabilitySnapshot,
   ProviderCatalogRefreshResult,
   SASCODE_WS_METHODS,
+  SascodeAcquireBrowserControlInput,
+  SascodeAcquireBrowserControlResult,
+  SascodeActivateModuleInput,
+  SascodeActivateModuleResult,
+  SascodeCreateBrowserInstanceInput,
   SascodeDirectorCommand,
   SascodeDirectorCommandResult,
   SascodeDispatchAttemptInput,
@@ -199,17 +204,29 @@ import {
   SascodeGetProjectSnapshotInput,
   SascodeGetWorkflowInput,
   SascodeGetWorkspaceSnapshotInput,
+  SascodeInstallModuleInput,
+  SascodeInstantiateModuleInput,
   SascodeListEventsInput,
   SascodeProjectSnapshot,
+  SascodePublishRoutingPolicyInput,
   SascodeRefreshProviderCapabilitiesInput,
   SascodeRunWorkflowInput,
   SascodeRunWorkflowResult,
   SascodeScheduleWorkUnitInput,
   SascodeScheduleWorkUnitResult,
+  SascodeReleaseBrowserControlInput,
+  SascodeSaveBrowserProfileInput,
+  SascodeSavePermissionGrantInput,
   SascodeSubmitResultInput,
   SascodeSubmitResultResult,
+  SascodeUpdateBrowserInstanceInput,
+  SascodeUpsertContextArtifactInput,
   SascodeSubscribeEventsInput,
   SascodeWorkspaceSnapshot,
+  BrowserInstance,
+  BrowserProfile,
+  SascodeModuleInstance,
+  SascodeModuleManifest,
   Workflow,
 } from "./sascode";
 import { WS_METHODS } from "./ws";
@@ -469,6 +486,105 @@ export const WsSascodeSubscribeEventsRpc = Rpc.make(
     success: DirectorEvent,
     error: WsRpcError,
     stream: true,
+  },
+);
+
+export const WsSascodePublishRoutingPolicyRpc = Rpc.make(
+  SASCODE_WS_METHODS.publishRoutingPolicy,
+  {
+    payload: SascodePublishRoutingPolicyInput,
+    success: Schema.Boolean,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeUpsertContextArtifactRpc = Rpc.make(
+  SASCODE_WS_METHODS.upsertContextArtifact,
+  {
+    payload: SascodeUpsertContextArtifactInput,
+    success: Schema.Void,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeSavePermissionGrantRpc = Rpc.make(
+  SASCODE_WS_METHODS.savePermissionGrant,
+  {
+    payload: SascodeSavePermissionGrantInput,
+    success: Schema.Boolean,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeSaveBrowserProfileRpc = Rpc.make(
+  SASCODE_WS_METHODS.saveBrowserProfile,
+  {
+    payload: SascodeSaveBrowserProfileInput,
+    success: BrowserProfile,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeCreateBrowserInstanceRpc = Rpc.make(
+  SASCODE_WS_METHODS.createBrowserInstance,
+  {
+    payload: SascodeCreateBrowserInstanceInput,
+    success: BrowserInstance,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeAcquireBrowserControlRpc = Rpc.make(
+  SASCODE_WS_METHODS.acquireBrowserControl,
+  {
+    payload: SascodeAcquireBrowserControlInput,
+    success: SascodeAcquireBrowserControlResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeReleaseBrowserControlRpc = Rpc.make(
+  SASCODE_WS_METHODS.releaseBrowserControl,
+  {
+    payload: SascodeReleaseBrowserControlInput,
+    success: BrowserInstance,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeUpdateBrowserInstanceRpc = Rpc.make(
+  SASCODE_WS_METHODS.updateBrowserInstance,
+  {
+    payload: SascodeUpdateBrowserInstanceInput,
+    success: BrowserInstance,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeInstallModuleRpc = Rpc.make(
+  SASCODE_WS_METHODS.installModule,
+  {
+    payload: SascodeInstallModuleInput,
+    success: SascodeModuleManifest,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeInstantiateModuleRpc = Rpc.make(
+  SASCODE_WS_METHODS.instantiateModule,
+  {
+    payload: SascodeInstantiateModuleInput,
+    success: SascodeModuleInstance,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeActivateModuleRpc = Rpc.make(
+  SASCODE_WS_METHODS.activateModule,
+  {
+    payload: SascodeActivateModuleInput,
+    success: SascodeActivateModuleResult,
+    error: WsRpcError,
   },
 );
 
@@ -1142,6 +1258,17 @@ export const WsFeatureRpcGroup = RpcGroup.make(
   WsSascodeSubmitResultRpc,
   WsSascodeDispatchAttemptRpc,
   WsSascodeSubscribeEventsRpc,
+  WsSascodePublishRoutingPolicyRpc,
+  WsSascodeUpsertContextArtifactRpc,
+  WsSascodeSavePermissionGrantRpc,
+  WsSascodeSaveBrowserProfileRpc,
+  WsSascodeCreateBrowserInstanceRpc,
+  WsSascodeAcquireBrowserControlRpc,
+  WsSascodeReleaseBrowserControlRpc,
+  WsSascodeUpdateBrowserInstanceRpc,
+  WsSascodeInstallModuleRpc,
+  WsSascodeInstantiateModuleRpc,
+  WsSascodeActivateModuleRpc,
   WsProjectsDiscoverScriptsRpc,
   WsProjectsListDirectoriesRpc,
   WsProjectsSearchEntriesRpc,

@@ -6,6 +6,7 @@ import {
   ThreadId,
 } from "../baseSchemas";
 import {
+  BrowserControlOwner,
   BrowserInstance,
   BrowserProfile,
 } from "./browser";
@@ -14,10 +15,20 @@ import {
   DirectorEvent,
   DirectorEventCursor,
 } from "./directorEvents";
-import { SascodeModuleInstance } from "./modules";
-import { SascodePermissionGrant } from "./permissions";
+import {
+  SascodeModuleInstance,
+  SascodeModuleManifest,
+} from "./modules";
+import {
+  SascodeAuthorizationDecision,
+  SascodePermissionCapability,
+  SascodePermissionGrant,
+} from "./permissions";
 import { ProviderCapabilitySnapshot } from "./capabilities";
 import {
+  AuditRecordId,
+  BrowserInstanceId,
+  StepUpRequestId,
   WorkflowId,
   WorkUnitAttemptId,
   WorkUnitId,
@@ -38,6 +49,12 @@ import {
   WorkUnitStatus,
 } from "./workflow";
 import {
+  ContextArtifact,
+} from "./context";
+import {
+  RoutingPolicy,
+} from "./routing";
+import {
   ProjectAttentionSnapshot,
   WorkspaceAttentionSnapshot,
 } from "./attention";
@@ -55,6 +72,17 @@ export const SASCODE_WS_METHODS = {
   submitResult: "sascode.submitResult",
   dispatchAttempt: "sascode.dispatchAttempt",
   subscribeEvents: "sascode.subscribeEvents",
+  publishRoutingPolicy: "sascode.publishRoutingPolicy",
+  upsertContextArtifact: "sascode.upsertContextArtifact",
+  savePermissionGrant: "sascode.savePermissionGrant",
+  saveBrowserProfile: "sascode.saveBrowserProfile",
+  createBrowserInstance: "sascode.createBrowserInstance",
+  acquireBrowserControl: "sascode.acquireBrowserControl",
+  releaseBrowserControl: "sascode.releaseBrowserControl",
+  updateBrowserInstance: "sascode.updateBrowserInstance",
+  installModule: "sascode.installModule",
+  instantiateModule: "sascode.instantiateModule",
+  activateModule: "sascode.activateModule",
 } as const;
 
 export const SascodeGetWorkspaceSnapshotInput = Schema.Struct({
@@ -231,3 +259,105 @@ export const SascodeSubscribeEventsInput = Schema.Struct({
 });
 export type SascodeSubscribeEventsInput =
   typeof SascodeSubscribeEventsInput.Type;
+
+export const SascodePublishRoutingPolicyInput = RoutingPolicy;
+export type SascodePublishRoutingPolicyInput =
+  typeof SascodePublishRoutingPolicyInput.Type;
+
+export const SascodeUpsertContextArtifactInput = ContextArtifact;
+export type SascodeUpsertContextArtifactInput =
+  typeof SascodeUpsertContextArtifactInput.Type;
+
+export const SascodeSavePermissionGrantInput = SascodePermissionGrant;
+export type SascodeSavePermissionGrantInput =
+  typeof SascodeSavePermissionGrantInput.Type;
+
+export const SascodeSaveBrowserProfileInput = BrowserProfile;
+export type SascodeSaveBrowserProfileInput =
+  typeof SascodeSaveBrowserProfileInput.Type;
+
+export const SascodeCreateBrowserInstanceInput = BrowserInstance;
+export type SascodeCreateBrowserInstanceInput =
+  typeof SascodeCreateBrowserInstanceInput.Type;
+
+export const SascodeAcquireBrowserControlInput = Schema.Struct({
+  auditRecordId: AuditRecordId,
+  stepUpRequestId: StepUpRequestId,
+  instanceId: BrowserInstanceId,
+  owner: BrowserControlOwner,
+  expectedAuthorizationEpoch: Schema.Number,
+  leaseExpiresAt: IsoDateTime,
+  actorKind: Schema.Literals(["human", "agent", "system", "module"]),
+  actorId: Schema.String,
+  reason: Schema.String,
+  consequence: Schema.String,
+  correlationId: Schema.optional(Schema.NullOr(Schema.String)),
+  occurredAt: IsoDateTime,
+});
+export type SascodeAcquireBrowserControlInput =
+  typeof SascodeAcquireBrowserControlInput.Type;
+
+export const SascodeAcquireBrowserControlResult = Schema.Struct({
+  authorization: SascodeAuthorizationDecision,
+  instance: BrowserInstance,
+  acquired: Schema.Boolean,
+});
+export type SascodeAcquireBrowserControlResult =
+  typeof SascodeAcquireBrowserControlResult.Type;
+
+export const SascodeReleaseBrowserControlInput = Schema.Struct({
+  instanceId: BrowserInstanceId,
+  expectedAuthorizationEpoch: Schema.Number,
+  now: IsoDateTime,
+});
+export type SascodeReleaseBrowserControlInput =
+  typeof SascodeReleaseBrowserControlInput.Type;
+
+export const SascodeUpdateBrowserInstanceInput = Schema.Struct({
+  instance: BrowserInstance,
+  expectedRuntimeGeneration: Schema.Number,
+  expectedAuthorizationEpoch: Schema.Number,
+});
+export type SascodeUpdateBrowserInstanceInput =
+  typeof SascodeUpdateBrowserInstanceInput.Type;
+
+export const SascodeInstallModuleInput = Schema.Struct({
+  manifest: SascodeModuleManifest,
+  installedAt: IsoDateTime,
+});
+export type SascodeInstallModuleInput =
+  typeof SascodeInstallModuleInput.Type;
+
+export const SascodeInstantiateModuleInput = SascodeModuleInstance;
+export type SascodeInstantiateModuleInput =
+  typeof SascodeInstantiateModuleInput.Type;
+
+export const SascodeModuleAuthorizationEnvelope = Schema.Struct({
+  capability: SascodePermissionCapability,
+  auditRecordId: AuditRecordId,
+  stepUpRequestId: StepUpRequestId,
+  actorId: Schema.String,
+  reason: Schema.String,
+  consequence: Schema.String,
+  correlationId: Schema.optional(Schema.NullOr(Schema.String)),
+});
+export type SascodeModuleAuthorizationEnvelope =
+  typeof SascodeModuleAuthorizationEnvelope.Type;
+
+export const SascodeActivateModuleInput = Schema.Struct({
+  instanceId: SascodeModuleInstance.fields.id,
+  expectedUpdatedAt: IsoDateTime,
+  authorizations: Schema.Array(SascodeModuleAuthorizationEnvelope),
+  isolatedExecution: Schema.Boolean,
+  occurredAt: IsoDateTime,
+});
+export type SascodeActivateModuleInput =
+  typeof SascodeActivateModuleInput.Type;
+
+export const SascodeActivateModuleResult = Schema.Struct({
+  instance: SascodeModuleInstance,
+  authorizations: Schema.Array(SascodeAuthorizationDecision),
+  activated: Schema.Boolean,
+});
+export type SascodeActivateModuleResult =
+  typeof SascodeActivateModuleResult.Type;

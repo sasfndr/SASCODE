@@ -1,4 +1,8 @@
-import { ORCHESTRATION_WS_METHODS, WS_METHODS } from "@synara/contracts";
+import {
+  ORCHESTRATION_WS_METHODS,
+  SASCODE_WS_METHODS,
+  WS_METHODS,
+} from "@synara/contracts";
 import { Deferred, Effect, Fiber } from "effect";
 import { describe, expect, it } from "vitest";
 
@@ -13,6 +17,12 @@ describe("WsRequestAdmission", () => {
     expect(classifyWsRequest(ORCHESTRATION_WS_METHODS.getTurnDiff)).toBe("expensive-read");
     expect(classifyWsRequest(ORCHESTRATION_WS_METHODS.repairState)).toBe("expensive-read");
     expect(classifyWsRequest(WS_METHODS.terminalAckOutput)).toBe("control");
+  });
+
+  it("classifies SASCODE owner mutations as control traffic", () => {
+    expect(classifyWsRequest(SASCODE_WS_METHODS.publishRoutingPolicy)).toBe("control");
+    expect(classifyWsRequest(SASCODE_WS_METHODS.savePermissionGrant)).toBe("control");
+    expect(classifyWsRequest(SASCODE_WS_METHODS.activateModule)).toBe("control");
   });
 
   it("reserves independent capacity for control traffic during an expensive-read flood", async () => {
