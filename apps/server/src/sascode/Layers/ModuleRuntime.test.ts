@@ -119,10 +119,22 @@ moduleLayer("ModuleRuntime", (it) => {
       assert.strictEqual(activation.instance.status, "active");
       assert.strictEqual(activation.authorizations[0]?.outcome, "allowed");
 
+      const suspended = yield* runtime.update({
+        instance: {
+          ...activation.instance,
+          status: "suspended",
+          state: { playback: "paused", track: "focus" },
+          updatedAt: "2026-07-30T11:02:30.000Z",
+        },
+        expectedUpdatedAt: activation.instance.updatedAt,
+      });
+      assert.strictEqual(suspended.status, "suspended");
+
       const persisted = yield* modules.getInstance({ instanceId });
       assert.strictEqual(persisted._tag, "Some");
       if (persisted._tag === "Some") {
-        assert.strictEqual(persisted.value.status, "active");
+        assert.strictEqual(persisted.value.status, "suspended");
+        assert.strictEqual(persisted.value.state.track, "focus");
       }
     }),
   );

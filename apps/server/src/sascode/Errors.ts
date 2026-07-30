@@ -6,6 +6,7 @@ import {
   DirectorCommandId,
   ModuleId,
   ModuleInstanceId,
+  ProjectId,
   ResultPacketId,
   RoutingPolicyId,
   StepUpRequestId,
@@ -418,3 +419,19 @@ export type ModuleRuntimeDomainError =
   | ModuleManifestInvariantError
   | ModuleInstanceConflictError
   | ModuleNotFoundError;
+
+export class WorkspaceLayoutConflictError extends Schema.TaggedErrorClass<WorkspaceLayoutConflictError>()(
+  "WorkspaceLayoutConflictError",
+  {
+    projectId: ProjectId,
+    expectedRevision: Schema.Number,
+    detail: Schema.String,
+  },
+) {
+  override get message(): string {
+    return (
+      `Workspace layout ${this.projectId} revision ${this.expectedRevision} ` +
+      `conflicts with durable state: ${this.detail}`
+    );
+  }
+}

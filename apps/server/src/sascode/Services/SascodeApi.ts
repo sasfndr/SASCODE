@@ -9,6 +9,7 @@ import type {
   SascodeGetProjectSnapshotInput,
   SascodeGetWorkflowInput,
   SascodeGetWorkspaceSnapshotInput,
+  SascodeGetWorkspaceLayoutInput,
   SascodeAcquireBrowserControlInput,
   SascodeAcquireBrowserControlResult,
   SascodeActivateModuleInput,
@@ -31,12 +32,17 @@ import type {
   SascodeReleaseBrowserControlInput,
   SascodeSaveBrowserProfileInput,
   SascodeSavePermissionGrantInput,
+  SascodeSaveWorkspaceLayoutInput,
+  SascodeSaveAttentionPreferenceInput,
+  SascodeResolveAttentionItemInput,
   SascodeSubmitResultInput,
   SascodeSubmitResultResult,
   SascodeUpdateBrowserInstanceInput,
+  SascodeUpdateModuleInstanceInput,
   SascodeUpsertContextArtifactInput,
   SascodeSubscribeEventsInput,
   SascodeWorkspaceSnapshot,
+  SascodeWorkspaceLayout,
   Workflow,
   BrowserInstance,
   BrowserProfile,
@@ -54,6 +60,7 @@ import type { ResultIngestionError } from "./ResultIngestion.ts";
 import type { ProviderCatalogSyncError } from "./ProviderCatalogSync.ts";
 import type { BrowserWorkspaceError } from "./BrowserWorkspace.ts";
 import type { ModuleRuntimeError } from "./ModuleRuntime.ts";
+import type { WorkspaceLayoutConflictError } from "../Errors.ts";
 
 export type SascodeApiError =
   | ProjectionRepositoryError
@@ -63,7 +70,8 @@ export type SascodeApiError =
   | ResultIngestionError
   | ProviderCatalogSyncError
   | BrowserWorkspaceError
-  | ModuleRuntimeError;
+  | ModuleRuntimeError
+  | WorkspaceLayoutConflictError;
 
 export interface SascodeApiShape {
   readonly getWorkspaceSnapshot: (
@@ -159,6 +167,10 @@ export interface SascodeApiShape {
     input: SascodeActivateModuleInput,
   ) => Effect.Effect<SascodeActivateModuleResult, SascodeApiError>;
 
+  readonly updateModuleInstance: (
+    input: SascodeUpdateModuleInstanceInput,
+  ) => Effect.Effect<SascodeModuleInstance, SascodeApiError>;
+
   readonly bootstrapProject: (
     input: SascodeBootstrapProjectInput,
   ) => Effect.Effect<SascodeBootstrapProjectResult, SascodeApiError>;
@@ -166,6 +178,22 @@ export interface SascodeApiShape {
   readonly startFeature: (
     input: SascodeStartFeatureInput,
   ) => Effect.Effect<SascodeStartFeatureResult, SascodeApiError>;
+
+  readonly getWorkspaceLayout: (
+    input: SascodeGetWorkspaceLayoutInput,
+  ) => Effect.Effect<SascodeWorkspaceLayout | null, SascodeApiError>;
+
+  readonly saveWorkspaceLayout: (
+    input: SascodeSaveWorkspaceLayoutInput,
+  ) => Effect.Effect<SascodeWorkspaceLayout, SascodeApiError>;
+
+  readonly saveAttentionPreference: (
+    input: SascodeSaveAttentionPreferenceInput,
+  ) => Effect.Effect<void, SascodeApiError>;
+
+  readonly resolveAttentionItem: (
+    input: SascodeResolveAttentionItemInput,
+  ) => Effect.Effect<boolean, SascodeApiError>;
 }
 
 export class SascodeApi extends ServiceMap.Service<

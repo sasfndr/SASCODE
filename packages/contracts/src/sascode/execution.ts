@@ -11,6 +11,7 @@ import {
 } from "./core";
 import { SascodePermissionProfile } from "./permissions";
 import { RoutingConstraint } from "./routing";
+import { ResolvedModelTarget } from "./capabilities";
 import {
   AcceptanceCriterion,
   ResultPacket,
@@ -51,6 +52,13 @@ export const WorkUnitExecutionSpec = Schema.Struct({
   expectedArtifacts: SascodeBoundedTextList,
   routingConstraints: Schema.Array(RoutingConstraint).check(
     Schema.isMaxLength(128),
+  ),
+  routingOverride: Schema.optional(
+    Schema.Struct({
+      actor: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(512)),
+      reason: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(8_192)),
+      target: ResolvedModelTarget,
+    }),
   ),
   baselineGitRef: Schema.optional(Schema.NullOr(Schema.String)),
   maxAttempts: PositiveInt,

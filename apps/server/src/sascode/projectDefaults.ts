@@ -10,12 +10,14 @@ import {
   type SascodeBootstrapProjectInput,
   type SascodePermissionCapability,
   type SascodePermissionGrant,
+  type SascodeWorkspaceLayout,
 } from "@synara/contracts";
 
 export interface SascodeProjectDefaults {
   readonly policy: RoutingPolicy;
   readonly permissionGrant: SascodePermissionGrant;
   readonly contextArtifacts: ReadonlyArray<ContextArtifact>;
+  readonly layout: SascodeWorkspaceLayout;
 }
 
 const ALL_PERMISSIONS: ReadonlyArray<SascodePermissionCapability> = [
@@ -424,9 +426,67 @@ export function createSascodeProjectDefaults(
     );
   }
 
+  const layout: SascodeWorkspaceLayout = {
+    projectId: input.projectId,
+    version: 1,
+    revision: 1,
+    presetKey: "stillspace",
+    theme: {
+      spectrum: 0.5,
+      projectAura: "stillspace-dusk",
+      glassOpacity: 0.72,
+      contrast: 1,
+      cornerRadius: 24,
+      density: "comfortable",
+      motion: "subtle",
+      backgroundDim: 0.22,
+      statusIntensity: 0.65,
+    },
+    mode: "focus",
+    layoutMode: "freeform",
+    modules: [
+      {
+        id: "core-agent-chat",
+        moduleType: "agent-chat",
+        moduleInstanceId: null,
+        x: 0.06,
+        y: 0.08,
+        width: 0.62,
+        height: 0.8,
+        dock: "floating",
+        zIndex: 20,
+        hiddenWhenInactive: false,
+        permissionScope: ["read-files", "write-files"],
+        configuration: {},
+      },
+      {
+        id: "core-session-shelf",
+        moduleType: "session-shelf",
+        moduleInstanceId: null,
+        x: 0.72,
+        y: 0.16,
+        width: 0.23,
+        height: 0.66,
+        dock: "right",
+        zIndex: 10,
+        hiddenWhenInactive: false,
+        permissionScope: ["read-files"],
+        configuration: {},
+      },
+    ],
+    activeThreadIds: [],
+    secondaryProjectId: null,
+    snapToGrid: true,
+    hideInactiveModules: true,
+    updatedBy: "session-owner",
+    createdAt: input.occurredAt,
+    updatedAt: input.occurredAt,
+  };
+
   return {
     policy,
     permissionGrant,
     contextArtifacts,
+    layout,
   };
 }

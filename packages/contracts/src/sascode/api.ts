@@ -19,6 +19,7 @@ import {
   SascodeModuleInstance,
   SascodeModuleManifest,
 } from "./modules";
+import { SascodeWorkspaceLayout } from "./layout";
 import {
   SascodeAuthorizationDecision,
   SascodePermissionCapability,
@@ -56,6 +57,7 @@ import {
   RoutingPolicy,
 } from "./routing";
 import {
+  AttentionPreference,
   ProjectAttentionSnapshot,
   WorkspaceAttentionSnapshot,
 } from "./attention";
@@ -84,8 +86,13 @@ export const SASCODE_WS_METHODS = {
   installModule: "sascode.installModule",
   instantiateModule: "sascode.instantiateModule",
   activateModule: "sascode.activateModule",
+  updateModuleInstance: "sascode.updateModuleInstance",
   bootstrapProject: "sascode.bootstrapProject",
   startFeature: "sascode.startFeature",
+  getWorkspaceLayout: "sascode.getWorkspaceLayout",
+  saveWorkspaceLayout: "sascode.saveWorkspaceLayout",
+  saveAttentionPreference: "sascode.saveAttentionPreference",
+  resolveAttentionItem: "sascode.resolveAttentionItem",
 } as const;
 
 export const SascodeGetWorkspaceSnapshotInput = Schema.Struct({
@@ -117,6 +124,7 @@ export const SascodeProjectSnapshot = Schema.Struct({
   browserProfiles: Schema.Array(BrowserProfile),
   browserInstances: Schema.Array(BrowserInstance),
   modules: Schema.Array(SascodeModuleInstance),
+  layout: Schema.NullOr(SascodeWorkspaceLayout),
   activePermissionGrants: Schema.Array(SascodePermissionGrant),
   generatedAt: IsoDateTime,
 });
@@ -335,6 +343,13 @@ export const SascodeInstantiateModuleInput = SascodeModuleInstance;
 export type SascodeInstantiateModuleInput =
   typeof SascodeInstantiateModuleInput.Type;
 
+export const SascodeUpdateModuleInstanceInput = Schema.Struct({
+  instance: SascodeModuleInstance,
+  expectedUpdatedAt: IsoDateTime,
+});
+export type SascodeUpdateModuleInstanceInput =
+  typeof SascodeUpdateModuleInstanceInput.Type;
+
 export const SascodeModuleAuthorizationEnvelope = Schema.Struct({
   capability: SascodePermissionCapability,
   auditRecordId: AuditRecordId,
@@ -395,8 +410,10 @@ export const SascodeBootstrapProjectResult = Schema.Struct({
   policy: RoutingPolicy,
   permissionGrant: SascodePermissionGrant,
   contextArtifacts: Schema.Array(ContextArtifact),
+  layout: SascodeWorkspaceLayout,
   policyCreated: Schema.Boolean,
   permissionGrantCreated: Schema.Boolean,
+  layoutCreated: Schema.Boolean,
 });
 export type SascodeBootstrapProjectResult =
   typeof SascodeBootstrapProjectResult.Type;
@@ -430,3 +447,28 @@ export const SascodeStartFeatureResult = Schema.Struct({
 });
 export type SascodeStartFeatureResult =
   typeof SascodeStartFeatureResult.Type;
+
+export const SascodeGetWorkspaceLayoutInput = Schema.Struct({
+  projectId: ProjectId,
+});
+export type SascodeGetWorkspaceLayoutInput =
+  typeof SascodeGetWorkspaceLayoutInput.Type;
+
+export const SascodeSaveWorkspaceLayoutInput = Schema.Struct({
+  layout: SascodeWorkspaceLayout,
+  expectedRevision: Schema.Number,
+});
+export type SascodeSaveWorkspaceLayoutInput =
+  typeof SascodeSaveWorkspaceLayoutInput.Type;
+
+export const SascodeSaveAttentionPreferenceInput = AttentionPreference;
+export type SascodeSaveAttentionPreferenceInput =
+  typeof SascodeSaveAttentionPreferenceInput.Type;
+
+export const SascodeResolveAttentionItemInput = Schema.Struct({
+  fingerprint: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(2_048)),
+  resolvedAt: IsoDateTime,
+  updatedAt: IsoDateTime,
+});
+export type SascodeResolveAttentionItemInput =
+  typeof SascodeResolveAttentionItemInput.Type;

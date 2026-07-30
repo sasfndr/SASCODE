@@ -26,6 +26,7 @@ import { ResultIngestionLive } from "./Layers/ResultIngestion.ts";
 import { SascodeApiLive } from "./Layers/SascodeApi.ts";
 import { TaskContractsLive } from "./Layers/TaskContracts.ts";
 import { WorkUnitOrchestratorLive } from "./Layers/WorkUnitOrchestrator.ts";
+import { WorkspaceLayoutRepositoryLive } from "./Layers/WorkspaceLayoutRepository.ts";
 
 const repositoryLayer = Layer.mergeAll(
   AttentionRepositoryLive,
@@ -36,6 +37,7 @@ const repositoryLayer = Layer.mergeAll(
   ExecutionPlanRepositoryLive,
   ModuleRepositoryLive,
   RoutingRepositoryLive,
+  WorkspaceLayoutRepositoryLive,
 );
 
 const directorLayer = DirectorLive.pipe(

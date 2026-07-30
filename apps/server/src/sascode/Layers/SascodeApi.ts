@@ -7,6 +7,7 @@ import { Effect, Layer, Option, Stream } from "effect";
 
 import { AttemptDispatcher } from "../Services/AttemptDispatcher.ts";
 import { AttentionEngine } from "../Services/AttentionEngine.ts";
+import { AttentionRepository } from "../Services/AttentionRepository.ts";
 import { BrowserWorkspaceRepository } from "../Services/BrowserWorkspaceRepository.ts";
 import { BrowserWorkspace } from "../Services/BrowserWorkspace.ts";
 import { CapabilityRepository } from "../Services/CapabilityRepository.ts";
@@ -19,6 +20,7 @@ import { ModuleRuntime } from "../Services/ModuleRuntime.ts";
 import { RoutingRepository } from "../Services/RoutingRepository.ts";
 import { SascodeApi, type SascodeApiShape } from "../Services/SascodeApi.ts";
 import { WorkUnitOrchestrator } from "../Services/WorkUnitOrchestrator.ts";
+import { WorkspaceLayoutRepository } from "../Services/WorkspaceLayoutRepository.ts";
 import { ResultIngestion } from "../Services/ResultIngestion.ts";
 import { ProviderCatalogSync } from "../Services/ProviderCatalogSync.ts";
 import { createSascodeProjectDefaults } from "../projectDefaults.ts";
@@ -27,6 +29,7 @@ import { createSascodeFeaturePlan } from "../featureWorkflow.ts";
 const makeSascodeApi = Effect.gen(function* () {
   const attempts = yield* AttemptDispatcher;
   const attention = yield* AttentionEngine;
+  const attentionRepository = yield* AttentionRepository;
   const browsers = yield* BrowserWorkspaceRepository;
   const browserWorkspace = yield* BrowserWorkspace;
   const capabilities = yield* CapabilityRepository;
@@ -37,6 +40,7 @@ const makeSascodeApi = Effect.gen(function* () {
   const moduleRuntime = yield* ModuleRuntime;
   const routing = yield* RoutingRepository;
   const workflows = yield* DirectorWorkflowRepository;
+  const layouts = yield* WorkspaceLayoutRepository;
   const orchestrator = yield* WorkUnitOrchestrator;
   const resultIngestion = yield* ResultIngestion;
   const providerCatalog = yield* ProviderCatalogSync;
@@ -66,6 +70,7 @@ const makeSascodeApi = Effect.gen(function* () {
         browsers.listProfiles({ projectId: input.projectId }),
         browsers.listInstances({ projectId: input.projectId }),
         modules.listInstances({ projectId: input.projectId }),
+        layouts.getLayout({ projectId: input.projectId }),
         capabilities.listActiveGrants({
           projectId: input.projectId,
           now: input.now,
@@ -80,6 +85,7 @@ const makeSascodeApi = Effect.gen(function* () {
           browserProfiles,
           browserInstances,
           projectModules,
+          projectLayout,
           activePermissionGrants,
         ]) => ({
           projectId: input.projectId,
@@ -88,6 +94,7 @@ const makeSascodeApi = Effect.gen(function* () {
           browserProfiles,
           browserInstances,
           modules: projectModules,
+          layout: Option.getOrNull(projectLayout),
           activePermissionGrants,
           generatedAt: input.now,
         }),
@@ -273,9 +280,16 @@ const makeSascodeApi = Effect.gen(function* () {
   const activateModule: SascodeApiShape["activateModule"] = (input) =>
     moduleRuntime.activate(input);
 
+  const updateModuleInstance: SascodeApiShape["updateModuleInstance"] = (
+    input,
+  ) => moduleRuntime.update(input);
+
   const bootstrapProject: SascodeApiShape["bootstrapProject"] = (input) =>
     Effect.gen(function* () {
       const defaults = createSascodeProjectDefaults(input);
+      const existingLayout = yield* layouts.getLayout({
+        projectId: input.projectId,
+      });
       const [policyCreated, permissionGrantCreated] = yield* Effect.all(
         [
           routing.publishPolicy(defaults.policy),
@@ -288,12 +302,20 @@ const makeSascodeApi = Effect.gen(function* () {
         (artifact) => context.upsertContextArtifact(artifact),
         { concurrency: 1, discard: true },
       );
+      const layout = Option.isSome(existingLayout)
+        ? existingLayout.value
+        : yield* layouts.saveLayout({
+            layout: defaults.layout,
+            expectedRevision: 0,
+          });
       return {
         policy: defaults.policy,
         permissionGrant: defaults.permissionGrant,
         contextArtifacts: [...defaults.contextArtifacts],
+        layout,
         policyCreated,
         permissionGrantCreated,
+        layoutCreated: Option.isNone(existingLayout),
       };
     });
 
@@ -411,6 +433,20 @@ const makeSascodeApi = Effect.gen(function* () {
       };
     });
 
+  const getWorkspaceLayout: SascodeApiShape["getWorkspaceLayout"] = (input) =>
+    layouts.getLayout(input).pipe(Effect.map(Option.getOrNull));
+
+  const saveWorkspaceLayout: SascodeApiShape["saveWorkspaceLayout"] = (input) =>
+    layouts.saveLayout(input);
+
+  const saveAttentionPreference: SascodeApiShape["saveAttentionPreference"] = (
+    input,
+  ) => attentionRepository.savePreference(input);
+
+  const resolveAttentionItem: SascodeApiShape["resolveAttentionItem"] = (
+    input,
+  ) => attentionRepository.resolveItem(input);
+
   return {
     getWorkspaceSnapshot,
     getProjectSnapshot,
@@ -435,8 +471,13 @@ const makeSascodeApi = Effect.gen(function* () {
     installModule,
     instantiateModule,
     activateModule,
+    updateModuleInstance,
     bootstrapProject,
     startFeature,
+    getWorkspaceLayout,
+    saveWorkspaceLayout,
+    saveAttentionPreference,
+    resolveAttentionItem,
   } satisfies SascodeApiShape;
 });
 

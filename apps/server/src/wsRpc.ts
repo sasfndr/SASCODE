@@ -1121,6 +1121,13 @@ const makeWsRpcHandlersLayer = () =>
             ),
             "Failed to activate the SASCODE module",
           ),
+        [SASCODE_WS_METHODS.updateModuleInstance]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.updateModuleInstance(input)),
+            ),
+            "Failed to update the SASCODE module instance",
+          ),
         [SASCODE_WS_METHODS.bootstrapProject]: (input) =>
           rpcEffect(
             requireSessionOwner.pipe(
@@ -1134,6 +1141,32 @@ const makeWsRpcHandlersLayer = () =>
               Effect.andThen(sascode.startFeature(input)),
             ),
             "Failed to start the SASCODE feature workflow",
+          ),
+        [SASCODE_WS_METHODS.getWorkspaceLayout]: (input) =>
+          rpcEffect(
+            sascode.getWorkspaceLayout(input),
+            "Failed to load the SASCODE workspace layout",
+          ),
+        [SASCODE_WS_METHODS.saveWorkspaceLayout]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.saveWorkspaceLayout(input)),
+            ),
+            "Failed to save the SASCODE workspace layout",
+          ),
+        [SASCODE_WS_METHODS.saveAttentionPreference]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.saveAttentionPreference(input)),
+            ),
+            "Failed to save the SASCODE attention preference",
+          ),
+        [SASCODE_WS_METHODS.resolveAttentionItem]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.resolveAttentionItem(input)),
+            ),
+            "Failed to resolve the SASCODE attention item",
           ),
         [SASCODE_WS_METHODS.subscribeEvents]: (input, { clientId }) =>
           streamAdmission.guard(

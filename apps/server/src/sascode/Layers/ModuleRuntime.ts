@@ -211,7 +211,69 @@ const makeModuleRuntime = Effect.gen(function* () {
       };
     });
 
-  return { install, instantiate, activate } satisfies ModuleRuntimeShape;
+  const update: ModuleRuntimeShape["update"] = (input) =>
+    Effect.gen(function* () {
+      const currentOption = yield* repository.getInstance({
+        instanceId: input.instance.id,
+      });
+      if (Option.isNone(currentOption)) {
+        return yield* new ModuleNotFoundError({
+          entityKind: "instance",
+          entityId: input.instance.id,
+        });
+      }
+      const current = currentOption.value;
+      if (
+        current.moduleId !== input.instance.moduleId ||
+        current.moduleVersion !== input.instance.moduleVersion ||
+        current.projectId !== input.instance.projectId ||
+        current.createdAt !== input.instance.createdAt
+      ) {
+        return yield* new ModuleInstanceConflictError({
+          instanceId: input.instance.id,
+          detail:
+            "Module identity, version, project scope, and creation time are immutable.",
+        });
+      }
+      const manifest = yield* repository.getManifest({
+        moduleId: current.moduleId,
+        version: current.moduleVersion,
+      });
+      if (
+        Option.isNone(manifest) ||
+        !manifest.value.placements.includes(input.instance.placement)
+      ) {
+        return yield* new ModuleInstanceConflictError({
+          instanceId: input.instance.id,
+          detail: "The requested module placement is not supported.",
+        });
+      }
+      if (
+        input.instance.status === "active" &&
+        current.status !== "active"
+      ) {
+        return yield* new ModuleInstanceConflictError({
+          instanceId: input.instance.id,
+          detail:
+            "Inactive modules must use the permission-checked activation operation.",
+        });
+      }
+      if (
+        !(yield* repository.updateInstance({
+          instance: input.instance,
+          expectedUpdatedAt: input.expectedUpdatedAt,
+        }))
+      ) {
+        return yield* new ModuleInstanceConflictError({
+          instanceId: input.instance.id,
+          detail:
+            "The module state changed before the optimistic update committed.",
+        });
+      }
+      return input.instance;
+    });
+
+  return { install, instantiate, activate, update } satisfies ModuleRuntimeShape;
 });
 
 export const ModuleRuntimeLive = Layer.effect(

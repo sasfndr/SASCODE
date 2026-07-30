@@ -29,6 +29,7 @@ describe("SASCODE project defaults", () => {
       contextArtifacts: [...defaults.contextArtifacts],
       policyCreated: true,
       permissionGrantCreated: true,
+      layoutCreated: true,
     });
 
     expect(decoded.policy.maxParallelWorkUnits).toBe(6);
@@ -43,6 +44,15 @@ describe("SASCODE project defaults", () => {
       "project-charter",
       "design-contract",
       "global-taste-profile",
+    ]);
+    expect(decoded.layout).toMatchObject({
+      presetKey: "stillspace",
+      mode: "focus",
+      layoutMode: "freeform",
+    });
+    expect(decoded.layout.modules.map(({ moduleType }) => moduleType)).toEqual([
+      "agent-chat",
+      "session-shelf",
     ]);
 
     const uiPlan = decoded.policy.roles.find(

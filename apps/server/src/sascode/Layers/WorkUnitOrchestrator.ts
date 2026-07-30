@@ -355,7 +355,9 @@ const makeWorkUnitOrchestrator = Effect.gen(function* () {
       const decision = Option.isSome(decisionOption)
         ? decisionOption.value
         : yield* Effect.gen(function* () {
-            const fallbackOverride = yield* resolveRetryOverride(attempts);
+            const fallbackOverride =
+              spec.routingOverride ??
+              (yield* resolveRetryOverride(attempts));
             return yield* modelRouter.routeWorkUnit({
               decisionId,
               workUnitId: unit.id,

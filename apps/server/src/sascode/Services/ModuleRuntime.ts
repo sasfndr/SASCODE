@@ -64,6 +64,13 @@ export interface ModuleRuntimeShape {
   readonly activate: (
     input: ActivateModuleInput,
   ) => Effect.Effect<ModuleActivationResult, ModuleRuntimeError>;
+
+  readonly update: (
+    input: {
+      readonly instance: SascodeModuleInstance;
+      readonly expectedUpdatedAt: string;
+    },
+  ) => Effect.Effect<SascodeModuleInstance, ModuleRuntimeError>;
 }
 
 export class ModuleRuntime extends ServiceMap.Service<
