@@ -13,6 +13,7 @@ import * as SqlSchema from "effect/unstable/sql/SqlSchema";
 import { toPersistenceSqlOrDecodeError } from "../../persistence/Errors.ts";
 import {
   AttachDirectorAttemptThreadInput,
+  AttachDirectorAttemptResultInput,
   DirectorWorkflowRepository,
   GetDirectorAttemptInput,
   GetDirectorWorkflowInput,
@@ -523,6 +524,21 @@ const makeDirectorWorkflowRepository = Effect.gen(function* () {
       `,
   });
 
+  const attachAttemptResultRow = SqlSchema.findOneOption({
+    Request: AttachDirectorAttemptResultInput,
+    Result: InsertedIdRow,
+    execute: (input) =>
+      sql`
+        UPDATE sascode_projection_work_unit_attempts
+        SET
+          result_packet_id = ${input.resultPacketId},
+          updated_at = ${input.updatedAt}
+        WHERE attempt_id = ${input.attemptId}
+          AND result_packet_id IS NULL
+        RETURNING attempt_id AS id
+      `,
+  });
+
   const loadWorkflow = (row: WorkflowRow) =>
     Effect.gen(function* () {
       const workUnits = yield* listWorkUnitRowsByWorkflow({ workflowId: row.id });
@@ -752,6 +768,17 @@ const makeDirectorWorkflowRepository = Effect.gen(function* () {
       ),
     );
 
+  const attachAttemptResult: DirectorWorkflowRepositoryShape["attachAttemptResult"] = (input) =>
+    attachAttemptResultRow(input).pipe(
+      Effect.map(Option.isSome),
+      Effect.mapError(
+        toPersistenceSqlOrDecodeError(
+          "DirectorWorkflowRepository.attachAttemptResult:query",
+          "DirectorWorkflowRepository.attachAttemptResult:decode",
+        ),
+      ),
+    );
+
   return {
     createGraph,
     getById,
@@ -764,6 +791,7 @@ const makeDirectorWorkflowRepository = Effect.gen(function* () {
     insertAttempt,
     transitionAttempt,
     attachAttemptThread,
+    attachAttemptResult,
   } satisfies DirectorWorkflowRepositoryShape;
 });
 

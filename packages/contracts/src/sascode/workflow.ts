@@ -205,3 +205,19 @@ export const ResultPacket = Schema.Struct({
   producedAt: IsoDateTime,
 });
 export type ResultPacket = typeof ResultPacket.Type;
+
+export const ResultVerificationIssue = Schema.Struct({
+  code: TrimmedNonEmptyString,
+  message: TrimmedNonEmptyString,
+  blocking: Schema.Boolean,
+});
+export type ResultVerificationIssue = typeof ResultVerificationIssue.Type;
+
+export const ResultPacketVerification = Schema.Struct({
+  packet: ResultPacket,
+  acceptedForCompletion: Schema.Boolean,
+  issues: Schema.Array(ResultVerificationIssue).check(Schema.isMaxLength(512)),
+  passedGateKeys: Schema.Array(TrimmedNonEmptyString).check(Schema.isMaxLength(128)),
+  verifiedAt: IsoDateTime,
+});
+export type ResultPacketVerification = typeof ResultPacketVerification.Type;

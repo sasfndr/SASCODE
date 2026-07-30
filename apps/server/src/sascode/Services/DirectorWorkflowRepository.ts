@@ -1,6 +1,7 @@
 import {
   IsoDateTime,
   ProjectId,
+  ResultPacketId,
   ThreadId,
   Workflow,
   WorkflowId,
@@ -89,6 +90,14 @@ export const AttachDirectorAttemptThreadInput = Schema.Struct({
 export type AttachDirectorAttemptThreadInput =
   typeof AttachDirectorAttemptThreadInput.Type;
 
+export const AttachDirectorAttemptResultInput = Schema.Struct({
+  attemptId: WorkUnitAttemptId,
+  resultPacketId: ResultPacketId,
+  updatedAt: IsoDateTime,
+});
+export type AttachDirectorAttemptResultInput =
+  typeof AttachDirectorAttemptResultInput.Type;
+
 export interface DirectorWorkflowRepositoryShape {
   readonly createGraph: (
     workflow: Workflow,
@@ -132,6 +141,10 @@ export interface DirectorWorkflowRepositoryShape {
 
   readonly attachAttemptThread: (
     input: AttachDirectorAttemptThreadInput,
+  ) => Effect.Effect<boolean, ProjectionRepositoryError>;
+
+  readonly attachAttemptResult: (
+    input: AttachDirectorAttemptResultInput,
   ) => Effect.Effect<boolean, ProjectionRepositoryError>;
 }
 

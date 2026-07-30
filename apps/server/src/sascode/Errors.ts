@@ -1,6 +1,8 @@
 import {
   AgentRoleId,
+  ResultPacketId,
   RoutingPolicyId,
+  TaskContractId,
   WorkflowId,
   WorkUnitId,
 } from "@synara/contracts";
@@ -168,3 +170,57 @@ export type ModelRouterDomainError =
   | NoEligibleRoutingTargetError
   | RoutingInvariantError
   | RoutingDecisionConflictError;
+
+export class TaskContractInvariantError extends Schema.TaggedErrorClass<TaskContractInvariantError>()(
+  "TaskContractInvariantError",
+  {
+    workUnitId: WorkUnitId,
+    detail: Schema.String,
+  },
+) {
+  override get message(): string {
+    return `Cannot seal task contract for ${this.workUnitId}: ${this.detail}`;
+  }
+}
+
+export class TaskContractConflictError extends Schema.TaggedErrorClass<TaskContractConflictError>()(
+  "TaskContractConflictError",
+  {
+    taskContractId: TaskContractId,
+  },
+) {
+  override get message(): string {
+    return `Task contract ${this.taskContractId} already exists and is immutable.`;
+  }
+}
+
+export class ResultPacketInvariantError extends Schema.TaggedErrorClass<ResultPacketInvariantError>()(
+  "ResultPacketInvariantError",
+  {
+    workUnitId: WorkUnitId,
+    detail: Schema.String,
+  },
+) {
+  override get message(): string {
+    return `Result packet for ${this.workUnitId} is invalid: ${this.detail}`;
+  }
+}
+
+export class ResultPacketConflictError extends Schema.TaggedErrorClass<ResultPacketConflictError>()(
+  "ResultPacketConflictError",
+  {
+    resultPacketId: ResultPacketId,
+  },
+) {
+  override get message(): string {
+    return `Result packet ${this.resultPacketId} already exists and is immutable.`;
+  }
+}
+
+export type TaskContractDomainError =
+  | DirectorEntityNotFoundError
+  | RoutingPolicyNotFoundError
+  | TaskContractInvariantError
+  | TaskContractConflictError
+  | ResultPacketInvariantError
+  | ResultPacketConflictError;
