@@ -36,6 +36,10 @@ The local-first backend foundation is complete:
   - Independent review: a provider different from the implementation provider.
 - Live discovery of configured Codex, Claude Code, Cursor, Gemini/Antigravity,
   Grok, Droid, Kilo, OpenCode, and Pi runtimes.
+- An unlimited, durable provider-account pool: several Claude, Codex, Gemini,
+  GLM, or other accounts can coexist and route work inside the same projects.
+- Account-aware routing priority, per-account enablement, account-specific
+  fallbacks, live-session affinity, and transcript-safe account handoff.
 - Subscription-CLI, API, ACP, local-runtime, and remote-runtime connection
   semantics.
 - Durable execution specifications, task contracts, isolated worktrees,
@@ -141,9 +145,12 @@ available through the authenticated local client.
 
 | Client method | Wire method | Result |
 | --- | --- | --- |
-| `getWorkspaceSnapshot(input)` | `sascode.getWorkspaceSnapshot` | Workspace attention plus provider capability snapshots |
+| `getWorkspaceSnapshot(input)` | `sascode.getWorkspaceSnapshot` | Workspace attention, provider accounts, and capability snapshots |
 | `getProjectSnapshot(input)` | `sascode.getProjectSnapshot` | Workflows, attention, browsers, modules, layout, and active grants |
 | `getWorkflow(input)` | `sascode.getWorkflow` | One workflow or `null` |
+| `listProviderAccounts()` | `sascode.listProviderAccounts` | Every configured provider account, ordered by priority |
+| `saveProviderAccount(input)` | `sascode.saveProviderAccount` | Saved provider-account profile |
+| `setProviderAccountEnabled(input)` | `sascode.setProviderAccountEnabled` | Updated account or `null` |
 | `listProviderCapabilities()` | `sascode.listProviderCapabilities` | Current discovered provider/model snapshots |
 | `refreshProviderCapabilities(input)` | `sascode.refreshProviderCapabilities` | Fresh snapshots plus per-provider discovery failures |
 | `listEvents(input)` | `sascode.listEvents` | Cursor-bounded Director events |
@@ -483,6 +490,60 @@ The catalog distinguishes:
 - `acp`
 - `local-runtime`
 - `remote-runtime`
+
+There is no one-account-per-provider restriction. Every subscription or runtime
+profile is a distinct `ProviderAccount`/`ProviderConnection` with:
+
+- A stable connection ID.
+- Provider kind and user-facing label.
+- Independent enablement and routing priority.
+- A non-secret launch profile.
+- Its own capability snapshot, health, models, account label, and fallback
+  position.
+
+The launch profile never stores OAuth tokens, passwords, or API keys. Provider
+CLIs continue to own credentials. SASCODE stores only the selector required to
+launch the already-authenticated profile:
+
+| Runtime | Account isolation selector |
+| --- | --- |
+| Claude Code | `launchProfile.configDir` → `CLAUDE_CONFIG_DIR` |
+| Codex | `launchProfile.homePath` → account-specific `CODEX_HOME` |
+| Cursor, Gemini/Antigravity, Grok, Droid | `launchProfile.homePath` → isolated child-process home |
+| Kilo, OpenCode | Account-specific `serverUrl` |
+| Pi | Account-specific `agentDir` |
+
+The renderer manages the pool through:
+
+```ts
+api.sascode.listProviderAccounts()
+api.sascode.saveProviderAccount(account)
+api.sascode.setProviderAccountEnabled({ connectionId, enabled, updatedAt })
+```
+
+`getWorkspaceSnapshot` also returns `providerAccounts`, so the global account
+strip and routing controls do not need a second read on initial load.
+
+Account semantics are session-safe:
+
+- New sessions and work units can use any enabled account.
+- Routing prefers higher `priority` when otherwise-equivalent accounts expose
+  the same model.
+- Retry fallback identifies a target by connection ID plus model, so a failed
+  Claude account can fall through to another Claude account before changing
+  model/provider when policy order recommends that.
+- A live session remains bound to its provider connection.
+- Selecting another account explicitly starts a fresh native provider runtime,
+  does not reuse the old account's native resume cursor, and injects the
+  retained SASCODE transcript so the conversation can continue coherently.
+- Disabling an account removes it from new routing. It does not kill a running
+  session without an explicit stop/handoff.
+
+When starting a manual `thread.turn.start`, pass the selected connection
+identity and provider-specific launch selector in `providerOptions`. The
+session projection exposes `providerConnectionId` and `providerAccountLabel`
+for the session card and composer account pill. Automated Director launches
+resolve this from the selected routing connection on the server.
 
 Consumer subscriptions are not interchangeable with developer APIs:
 

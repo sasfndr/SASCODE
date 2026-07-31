@@ -928,6 +928,9 @@ Frontend code must:
 - Avoid embedding orchestration, readiness, routing, permission, retry, or
   workflow-completion rules in UI components.
 - Avoid hard-coding model behavior or assuming one provider.
+- Treat each connected subscription account as a distinct provider connection;
+  never collapse several Claude, Codex, Gemini, or other accounts into one
+  global toggle.
 - Treat routing decisions, permission decisions, attention snapshots, browser
   ownership, module activation, and layout revisions as backend truth.
 - Preserve the existing chat, terminal, diff, Git, browser, provider,
@@ -939,6 +942,8 @@ Implemented data domains include:
 - Projects and sessions.
 - Workflows, work units, attempts, and provider threads.
 - Agents, providers, models, routing policies, routing decisions, and overrides.
+- Unlimited provider-account pools, account health/priority, per-session
+  affinity, and explicit account handoff.
 - Tool calls, file changes, approvals, user input, and handoffs.
 - Context, evidence, quality gates, and immutable result packets.
 - Live Director events and cross-project attention.

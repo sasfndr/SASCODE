@@ -597,6 +597,12 @@ A session has:
 - one working context;
 - and zero or more delegated child tasks.
 
+The project is not bound to that one connection. Many sessions in the same
+project may simultaneously use different accounts from the same provider. A
+session keeps account affinity while its native runtime is live; an explicit
+account change is a structured handoff into a fresh native runtime, not a
+silent reuse of an account-scoped provider session ID.
+
 ### 9.4 Work unit
 
 A bounded unit of work with:
@@ -646,6 +652,12 @@ A role does not permanently equal one model. It resolves to a model and harness 
 
 An authenticated local harness, subscription, API, or remote execution account.
 
+SASCODE supports an unlimited pool of connections per provider. A user may
+connect two Claude Max accounts, several Codex accounts, multiple Google
+profiles, or any mixture of subscription and API/runtime accounts. These
+accounts remain available to every project unless a future project policy
+narrows the pool.
+
 The connection reports:
 
 - available models;
@@ -656,6 +668,21 @@ The connection reports:
 - usage or quota signals when available;
 - compatible continuation behavior;
 - and execution constraints.
+
+Each connection also owns:
+
+- a stable connection identity;
+- an account label;
+- enable/disable state;
+- routing priority;
+- a non-secret isolated launch profile;
+- live-session affinity;
+- and an explicit, transcript-preserving handoff behavior.
+
+Multiple accounts are not merged into a fictional larger quota. SASCODE keeps
+their identities, usage states, and provider-native sessions separate. New
+work may spill to another enabled account; existing work changes accounts only
+through a visible handoff.
 
 The founding adapter priorities are:
 

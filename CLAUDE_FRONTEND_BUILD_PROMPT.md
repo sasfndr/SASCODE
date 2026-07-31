@@ -28,6 +28,7 @@ Before editing, read every line of:
 /Users/sas/Documents/SASCODE/CLAUDE.md
 /Users/sas/Documents/SASCODE/PRODUCT_VISION.md
 /Users/sas/Documents/SASCODE/BACKEND_HANDOFF.md
+/Users/sas/Documents/SASCODE/packages/contracts/src/orchestration.ts
 /Users/sas/Documents/SASCODE/packages/contracts/src/sascode/api.ts
 /Users/sas/Documents/SASCODE/packages/contracts/src/sascode/attention.ts
 /Users/sas/Documents/SASCODE/packages/contracts/src/sascode/browser.ts
@@ -42,6 +43,7 @@ Before editing, read every line of:
 /Users/sas/Documents/SASCODE/packages/contracts/src/sascode/workflow.ts
 /Users/sas/Documents/SASCODE/packages/contracts/src/ipc.ts
 /Users/sas/Documents/SASCODE/packages/contracts/src/rpc.ts
+/Users/sas/Documents/SASCODE/apps/server/src/sascode/providerAccounts.ts
 ```
 
 Inspect the current frontend architecture before choosing seams:
@@ -360,6 +362,9 @@ Also implement:
 - Loading/skeleton.
 - Offline/reconnecting.
 - Provider missing authentication.
+- One provider with several subscription accounts.
+- Account exhausted/disabled with automatic spillover.
+- Explicit live-session account handoff.
 - Preferred model unavailable with fallback explanation.
 - Workflow running.
 - Dependency waiting.
@@ -608,6 +613,7 @@ Show:
 Allow:
 
 - Explicit per-work-unit route override before scheduling.
+- Explicit account selection or automatic account pooling.
 - Reset to automatic.
 - Project routing-policy inspection/editing in an advanced surface.
 - Refresh provider capabilities.
@@ -616,6 +622,99 @@ Populate every target from `listProviderCapabilities` or
 `refreshProviderCapabilities`. Never hard-code that “Opus 5” or “Fable 5”
 exists. If the installed runtime reports a matching family, prefer it according
 to policy. If not, show the actual selected fallback.
+
+## Multi-account provider experience
+
+This is a core product surface, not an advanced placeholder. A user can connect
+an unlimited number of accounts for each provider and use them simultaneously
+across the same projects.
+
+The backend contract is:
+
+```ts
+api.sascode.listProviderAccounts()
+api.sascode.saveProviderAccount(account)
+api.sascode.setProviderAccountEnabled({
+  connectionId,
+  enabled,
+  updatedAt,
+})
+```
+
+`getWorkspaceSnapshot` also returns `providerAccounts`. Join accounts to
+capability snapshots by `account.id === snapshot.connectionId`.
+
+Build a beautiful contained Provider Accounts surface in settings:
+
+- Group accounts by provider without imposing a numeric limit.
+- Show label, connection kind, authenticated identity when known, enabled
+  state, routing priority, health, models, and quota/usage signals.
+- Add, edit, rename, reorder/prioritize, enable, and disable accounts.
+- Never ask for or persist raw OAuth tokens, passwords, cookies, or API keys in
+  `ProviderAccount`.
+- Store only the provider CLI/runtime selector in `launchProfile`.
+- Explain that disabling affects new routing and does not terminate an already
+  running session.
+- Make setup states honest when a profile path exists but that CLI profile
+  still needs authentication.
+
+Use these launch-profile mappings:
+
+```text
+Claude Code: launchProfile.configDir
+Codex: launchProfile.homePath
+Cursor / Gemini-Antigravity / Grok / Droid: launchProfile.homePath
+Kilo / OpenCode: launchProfile.serverUrl
+Pi: launchProfile.agentDir
+All: optional launchProfile.binaryPath
+```
+
+In the primary session surface, show the bound account as a quiet account pill
+beside the model control. It must expose:
+
+- `Automatic` for a new session/work unit.
+- Every enabled compatible account.
+- Account health and usage warning.
+- A shortcut to manage accounts.
+
+Do not implement a global provider-account toggle that mutates every session.
+Each session has independent affinity, so account A and account B can work in
+parallel in the same project.
+
+When dispatching a manual `thread.turn.start`, translate the chosen
+`ProviderAccount.launchProfile` into the corresponding provider-specific
+`ProviderStartOptions`, and include:
+
+```ts
+{
+  providerConnectionId: account.id,
+  providerAccountLabel: account.accountLabel ?? account.displayName,
+  // provider-specific launch profile
+}
+```
+
+The projected session then exposes `providerConnectionId` and
+`providerAccountLabel`; treat those as the authoritative live binding.
+
+Switching a live session to another account is an explicit handoff:
+
+- Present a concise confirmation popover, not a frightening modal.
+- Explain that conversation context remains, while the provider-native runtime
+  restarts under the selected account.
+- Do not reuse the old account's native resume/session ID.
+- Keep the same SASCODE project and thread.
+- Show a brief “Handing off…” state.
+- The backend injects the retained transcript into the fresh runtime.
+- Be honest that the receiving model may consume additional input tokens to
+  absorb that transcript.
+- If handoff fails, keep the old binding legible and offer retry or another
+  account; never pretend the switch succeeded.
+
+Automatic Director work already routes and retries by account connection.
+Higher account priority wins equivalent ties, and fallback order can advance
+from one account to another even when provider and model names are identical.
+Make this visible on demand in routing rationale as `account → model`, without
+turning the session shelf into a quota dashboard.
 
 ## Preserve the code-harness core
 
@@ -635,6 +734,8 @@ The redesign must retain all important inherited product capability:
 - Split sessions.
 - Pull requests.
 - Provider setup, authentication, health, updates, and usage.
+- Unlimited provider-account management, per-session affinity, and account
+  handoff.
 - Settings.
 - Shortcuts.
 - Diagnostics and recovery.
@@ -865,6 +966,8 @@ Do not declare completion until:
 - Chat can be positioned top or left.
 - The real backend can bootstrap a project and start a feature.
 - Automatic routing and explicit override are visible.
+- Multiple accounts per provider can be added, prioritized, disabled, selected,
+  used concurrently, and safely handed off.
 - Approvals, input, retry, review, failure, and completion are usable.
 - Edit Space persists draggable/resizable modules and theme settings.
 - Daylight, Dusk, and Nightfall are polished.
