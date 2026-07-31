@@ -163,8 +163,11 @@ export function EditSpaceLayer(props: EditSpaceLayerProps) {
             <div className="sas-edit-grid" aria-hidden="true" />
 
             <p
-              className="absolute left-1/2 top-3 -translate-x-1/2 text-[11px]"
-              style={{ color: "var(--sas-text-on-canvas-secondary)" }}
+              className="absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded-full px-3 py-1 text-[11px]"
+              style={{
+                color: "var(--sas-text-on-canvas-secondary)",
+                backgroundColor: "var(--sas-glass-quiet)",
+              }}
             >
               Drag to move · Drag edges to resize · Arrows move · Shift+arrows resize · Alt+arrows
               dock
@@ -273,7 +276,7 @@ export function EditSpaceLayer(props: EditSpaceLayerProps) {
             <div className="mt-4 flex gap-2">
               <button
                 type="button"
-                onClick={controller.keepLocalEdits}
+                onClick={() => void controller.keepLocalEdits()}
                 className="sas-transition sas-focusable flex-1 rounded-[var(--sas-radius-sm)] py-2 text-[12.5px] font-medium"
                 style={{ backgroundColor: "var(--sas-accent)", color: "var(--sas-text-on-accent)" }}
               >

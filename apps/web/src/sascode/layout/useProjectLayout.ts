@@ -21,6 +21,7 @@ import {
   saveWorkspaceLayout,
   workspaceLayoutQueryOptions,
 } from "../queries/sascodeQueries";
+import { describeRpcError } from "../api/rpcError";
 import { DEFAULT_THEME_SETTINGS } from "../theme/spectrum";
 import { recoverOffScreenModules, reconcileLayoutConflict } from "./layoutGeometry";
 import { DEFAULT_MODULE_PLACEMENTS } from "../modules/moduleRegistry";
@@ -55,7 +56,7 @@ export interface ProjectLayoutController {
   /** Set when the last save lost a race; the local edit is preserved. */
   conflict: { remote: SascodeWorkspaceLayout } | null;
   /** Keeps local edits and rebases them onto the winning revision. */
-  keepLocalEdits: () => void;
+  keepLocalEdits: () => Promise<void>;
   /** Abandons local edits in favour of the winning revision. */
   takeRemote: () => void;
 }
@@ -119,8 +120,16 @@ export function useProjectLayout(projectId: ProjectId | null): ProjectLayoutCont
         return;
       }
       inFlightRef.current = true;
+      // A queued idle write carries an older revision by definition. Letting it
+      // fire behind this save is what turns one lost race into an unbreakable
+      // conflict loop, so the timer is cancelled before the request goes out.
+      if (idleTimerRef.current !== null) {
+        clearTimeout(idleTimerRef.current);
+        idleTimerRef.current = null;
+      }
       setStatus("saving");
       setError(null);
+      let conflicted = false;
       try {
         const saved = await saveWorkspaceLayout({
           layout: next,
@@ -133,6 +142,7 @@ export function useProjectLayout(projectId: ProjectId | null): ProjectLayoutCont
       } catch (cause) {
         // A rejected save means another window (or tab) won the race. Fetch the
         // winner, keep the user's geometry, and offer an explicit choice.
+        conflicted = true;
         try {
           const remote = await queryClient.fetchQuery({
             ...workspaceLayoutQueryOptions(projectId),
@@ -143,17 +153,20 @@ export function useProjectLayout(projectId: ProjectId | null): ProjectLayoutCont
             setStatus("conflict");
           } else {
             setStatus("error");
-            setError(cause instanceof Error ? cause.message : "Could not save layout");
+            setError(describeRpcError(cause, "Could not save layout"));
           }
         } catch {
           setStatus("error");
-          setError(cause instanceof Error ? cause.message : "Could not save layout");
+          setError(describeRpcError(cause, "Could not save layout"));
         }
       } finally {
         inFlightRef.current = false;
         const queued = pendingRef.current;
         pendingRef.current = null;
-        if (queued) void persist(queued);
+        // Only replay a coalesced write when the last one actually landed.
+        // After a conflict the queued layout is stale, and replaying it would
+        // immediately re-raise the dialog the user just answered.
+        if (queued && !conflicted) void persist(queued);
       }
     },
     [projectId, queryClient],
@@ -227,13 +240,20 @@ export function useProjectLayout(projectId: ProjectId | null): ProjectLayoutCont
     });
   }, [update]);
 
-  const keepLocalEdits = useCallback(() => {
-    if (!conflict || !draft) return;
-    const resolution = reconcileLayoutConflict(draft, conflict.remote);
+  const keepLocalEdits = useCallback(async () => {
+    if (!conflict || !draft || !projectId) return;
+    // Re-read before merging: the winning revision may itself have been
+    // superseded while the dialog was open, and rebasing onto a stale one
+    // would just lose the race again.
+    const freshest =
+      (await queryClient
+        .fetchQuery({ ...workspaceLayoutQueryOptions(projectId), staleTime: 0 })
+        .catch(() => null)) ?? conflict.remote;
+    const resolution = reconcileLayoutConflict(draft, freshest);
     setConflict(null);
     setDraft(resolution.merged);
-    void persist(resolution.merged);
-  }, [conflict, draft, persist]);
+    await persist(resolution.merged);
+  }, [conflict, draft, persist, projectId, queryClient]);
 
   const takeRemote = useCallback(() => {
     if (!conflict || !projectId) return;

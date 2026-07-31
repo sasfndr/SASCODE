@@ -240,7 +240,10 @@ export function ProjectSpace(props: ProjectSpaceProps) {
       />
       <div className="sas-scrim" aria-hidden="true" />
 
-      {props.active ? (
+      {/* Edit Space renders every module as a movable frame over this space, so
+          the live composition is hidden while arranging. Leaving both on screen
+          shows each module twice. */}
+      {props.active && !props.editSpaceActive ? (
         <div className="relative flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4 pt-1">
           <div className="flex min-h-0 flex-1 gap-3">
             {props.chatDock === "left" && chatSheet ? (
@@ -310,7 +313,7 @@ export function ProjectSpace(props: ProjectSpaceProps) {
             </div>
           ) : null}
         </div>
-      ) : (
+      ) : props.active ? null : (
         // Neighbouring spaces are only an edge reveal. Nothing heavy mounts,
         // which is what keeps cross-project presence cheap.
         <div className="relative flex h-full items-center justify-center">
