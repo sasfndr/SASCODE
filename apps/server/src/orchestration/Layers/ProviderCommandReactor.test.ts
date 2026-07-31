@@ -6521,6 +6521,83 @@ describe("ProviderCommandReactor", () => {
     });
   });
 
+  it("hands a live thread to another subscription account without reusing its native cursor", async () => {
+    const harness = await createHarness({
+      threadModelSelection: {
+        provider: "claudeAgent",
+        model: "claude-opus-5",
+      },
+    });
+    const now = new Date().toISOString();
+
+    await Effect.runPromise(
+      harness.engine.dispatch({
+        type: "thread.turn.start",
+        commandId: CommandId.makeUnsafe("cmd-account-a"),
+        threadId: ThreadId.makeUnsafe("thread-1"),
+        message: {
+          messageId: asMessageId("message-account-a"),
+          role: "user",
+          text: "Establish the visual direction.",
+          attachments: [],
+        },
+        providerOptions: {
+          providerConnectionId: "provider:claudeAgent:account-a",
+          providerAccountLabel: "Design account",
+          claudeAgent: { configDir: "/profiles/claude/account-a" },
+        },
+        interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
+        runtimeMode: "approval-required",
+        createdAt: now,
+      }),
+    );
+    await waitFor(() => harness.startSession.mock.calls.length === 1);
+    await waitFor(() => harness.sendTurn.mock.calls.length === 1);
+
+    await Effect.runPromise(
+      harness.engine.dispatch({
+        type: "thread.turn.start",
+        commandId: CommandId.makeUnsafe("cmd-account-b"),
+        threadId: ThreadId.makeUnsafe("thread-1"),
+        message: {
+          messageId: asMessageId("message-account-b"),
+          role: "user",
+          text: "Continue on the second subscription.",
+          attachments: [],
+        },
+        providerOptions: {
+          providerConnectionId: "provider:claudeAgent:account-b",
+          providerAccountLabel: "Build account",
+          claudeAgent: { configDir: "/profiles/claude/account-b" },
+        },
+        interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
+        runtimeMode: "approval-required",
+        createdAt: now,
+      }),
+    );
+
+    await waitFor(() => harness.startSession.mock.calls.length === 2);
+    await waitFor(() => harness.sendTurn.mock.calls.length === 2);
+    expect(harness.startSession.mock.calls[1]?.[1]).toMatchObject({
+      providerOptions: {
+        providerConnectionId: "provider:claudeAgent:account-b",
+        providerAccountLabel: "Build account",
+        claudeAgent: { configDir: "/profiles/claude/account-b" },
+      },
+    });
+    expect(harness.startSession.mock.calls[1]?.[1]).not.toHaveProperty(
+      "resumeCursor",
+    );
+    expect(harness.sendTurn.mock.calls[1]?.[0]).toMatchObject({
+      input: expect.stringContaining("<thread_context>"),
+    });
+    await waitFor(
+      async () =>
+        (await readHarnessThread(harness))?.session
+          ?.providerConnectionId === "provider:claudeAgent:account-b",
+    );
+  });
+
   it("restarts the provider session when runtime mode changes on the thread or turn request", async () => {
     const harness = await createHarness();
     const now = new Date().toISOString();

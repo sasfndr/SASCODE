@@ -134,9 +134,12 @@ const makeProviderCapabilitySync = Effect.gen(function* () {
         connectionId: input.connection.id,
         providerKey: input.connection.providerKey,
         providerKind: input.providerKind,
+        connectionPriority: input.connection.priority,
         models,
         quota: input.quota,
         health: input.health ?? inferredHealth,
+        healthDetail: input.healthDetail ?? null,
+        authenticatedAccountLabel: input.authenticatedAccountLabel ?? null,
         source: discovered.source,
       });
       const snapshot: ProviderCapabilitySnapshot = {
@@ -148,6 +151,7 @@ const makeProviderCapabilitySync = Effect.gen(function* () {
         providerKind: input.providerKind,
         displayName: input.connection.displayName,
         connectionKind: input.connection.connectionKind,
+        connectionPriority: input.connection.priority,
         health: input.health ?? inferredHealth,
         healthDetail:
           input.healthDetail ??

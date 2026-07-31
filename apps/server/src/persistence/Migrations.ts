@@ -109,6 +109,7 @@ import Migration0090 from "./Migrations/090_SascodeContextEvidence.ts";
 import Migration0091 from "./Migrations/091_SascodeCapabilityKernel.ts";
 import Migration0092 from "./Migrations/092_SascodeExecutionPlans.ts";
 import Migration0093 from "./Migrations/093_SascodeWorkspaceLayouts.ts";
+import Migration0094 from "./Migrations/094_ProviderAccountAffinity.ts";
 
 /**
  * Migration loader with all migrations defined inline.
@@ -217,6 +218,7 @@ export const migrationEntries = [
   [91, "SascodeCapabilityKernel", Migration0091],
   [92, "SascodeExecutionPlans", Migration0092],
   [93, "SascodeWorkspaceLayouts", Migration0093],
+  [94, "ProviderAccountAffinity", Migration0094],
 ] as const;
 
 export const makeMigrationLoader = (throughId?: number) =>

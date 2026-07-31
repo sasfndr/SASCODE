@@ -286,10 +286,18 @@ export function evaluateRouting(
     }
   }
 
+  const connectionPriorityBySnapshotId = new Map(
+    input.snapshots.map((snapshot) => [
+      snapshot.id,
+      snapshot.connectionPriority ?? 0,
+    ]),
+  );
   candidates.sort(
     (left, right) =>
       Number(right.eligible) - Number(left.eligible) ||
       right.score - left.score ||
+      (connectionPriorityBySnapshotId.get(right.capabilitySnapshotId) ?? 0) -
+        (connectionPriorityBySnapshotId.get(left.capabilitySnapshotId) ?? 0) ||
       left.target.providerKey.localeCompare(right.target.providerKey) ||
       left.target.modelSlug.localeCompare(right.target.modelSlug) ||
       left.target.connectionId.localeCompare(right.target.connectionId),

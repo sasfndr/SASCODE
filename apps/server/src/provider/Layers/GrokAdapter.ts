@@ -1076,6 +1076,9 @@ export function makeGrokAdapter(
             ...(providerGrokOptions?.binaryPath !== undefined
               ? { binaryPath: providerGrokOptions.binaryPath }
               : {}),
+            ...(providerGrokOptions?.homePath !== undefined
+              ? { homePath: providerGrokOptions.homePath }
+              : {}),
             ...(grokModelSelection?.model ? { model: grokModelSelection.model } : {}),
             ...(grokModelSelection?.options?.reasoningEffort
               ? { reasoningEffort: grokModelSelection.options.reasoningEffort }

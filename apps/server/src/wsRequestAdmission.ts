@@ -21,6 +21,8 @@ const CONTROL_METHODS = new Set<string>([
   ORCHESTRATION_WS_METHODS.reconcileProviderDelivery,
   SASCODE_WS_METHODS.executeDirectorCommand,
   SASCODE_WS_METHODS.refreshProviderCapabilities,
+  SASCODE_WS_METHODS.saveProviderAccount,
+  SASCODE_WS_METHODS.setProviderAccountEnabled,
   SASCODE_WS_METHODS.scheduleWorkUnit,
   SASCODE_WS_METHODS.runWorkflow,
   SASCODE_WS_METHODS.submitResult,

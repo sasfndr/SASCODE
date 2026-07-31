@@ -207,4 +207,38 @@ describe("evaluateRouting", () => {
         ?.rejectedReasons,
     ).toContain("Provider connection is usage-limited.");
   });
+
+  it("prefers the higher-priority account when model capabilities tie", () => {
+    const base = snapshots[0]!;
+    const result = evaluateRouting({
+      policy,
+      roleId: AgentRoleId.makeUnsafe("visual-designer"),
+      activity: "visual-design",
+      snapshots: [
+        {
+          ...base,
+          id: CapabilitySnapshotId.makeUnsafe("snapshot-claude-personal"),
+          connectionId: ProviderConnectionId.makeUnsafe(
+            "connection-claude-personal",
+          ),
+          connectionPriority: 50,
+        },
+        {
+          ...base,
+          id: CapabilitySnapshotId.makeUnsafe("snapshot-claude-studio"),
+          connectionId: ProviderConnectionId.makeUnsafe(
+            "connection-claude-studio",
+          ),
+          connectionPriority: 120,
+        },
+      ],
+    });
+
+    expect("_tag" in result).toBe(false);
+    if ("_tag" in result) return;
+    expect(result.selected?.connectionId).toBe("connection-claude-studio");
+    expect(result.fallbackOrder[0]?.connectionId).toBe(
+      "connection-claude-personal",
+    );
+  });
 });

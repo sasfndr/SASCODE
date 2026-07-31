@@ -1785,9 +1785,20 @@ function makeClaudeAdapter(options?: ClaudeAdapterLiveOptions) {
       }
       return lock.withPermits(1)(effect);
     };
-    const resolveClaudeSdkEnv = Effect.sync(() =>
-      buildClaudeProcessEnv({ homeDir: serverConfig.homeDir }),
-    );
+    const resolveClaudeSdkEnv = (configDir?: string) =>
+      Effect.sync(() =>
+        buildClaudeProcessEnv({
+          homeDir: serverConfig.homeDir,
+          ...(configDir
+            ? {
+                env: {
+                  ...process.env,
+                  CLAUDE_CONFIG_DIR: configDir,
+                },
+              }
+            : {}),
+        }),
+      );
 
     const bindClaudeProcessOwner =
       (owner: ClaudeProcessOwner) =>
@@ -4879,7 +4890,9 @@ function makeClaudeAdapter(options?: ClaudeAdapterLiveOptions) {
           ...(ultracode ? { ultracode: true } : {}),
         };
         const claudeSubagents = buildClaudeSdkSubagents();
-        const claudeSdkEnv = yield* resolveClaudeSdkEnv;
+        const claudeSdkEnv = yield* resolveClaudeSdkEnv(
+          providerOptions?.configDir,
+        );
         if (input.runtimeMode === "auto") {
           const binaryPath = providerOptions?.binaryPath ?? "claude";
           const installedVersion = yield* Effect.tryPromise({
@@ -5797,7 +5810,7 @@ function makeClaudeAdapter(options?: ClaudeAdapterLiveOptions) {
         }
 
         // 3. Spawn a temporary process for discovery (deduplicating concurrent requests).
-        const claudeSdkEnv = yield* resolveClaudeSdkEnv;
+        const claudeSdkEnv = yield* resolveClaudeSdkEnv();
         const discoveryPromise =
           pendingCommandDiscovery ??
           discoverCommandsViaTemporaryProcess(
@@ -5920,7 +5933,7 @@ function makeClaudeAdapter(options?: ClaudeAdapterLiveOptions) {
         // Cold starts have no active Claude session. Discover with one
         // short-lived SDK process so the UI receives model capability flags on
         // its first request instead of caching an empty "pending" catalog.
-        const claudeSdkEnv = yield* resolveClaudeSdkEnv;
+        const claudeSdkEnv = yield* resolveClaudeSdkEnv();
         const discoveryPromise =
           pendingModelDiscovery ??
           discoverModelsViaTemporaryProcess(

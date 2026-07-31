@@ -27,6 +27,7 @@ import {
   SascodePermissionProfile,
 } from "./permissions";
 import {
+  ProviderAccount,
   ProviderCapabilitySnapshot,
   ProviderCatalogRefreshResult,
 } from "./capabilities";
@@ -70,6 +71,9 @@ export const SASCODE_WS_METHODS = {
   getProjectSnapshot: "sascode.getProjectSnapshot",
   getWorkflow: "sascode.getWorkflow",
   listProviderCapabilities: "sascode.listProviderCapabilities",
+  listProviderAccounts: "sascode.listProviderAccounts",
+  saveProviderAccount: "sascode.saveProviderAccount",
+  setProviderAccountEnabled: "sascode.setProviderAccountEnabled",
   refreshProviderCapabilities: "sascode.refreshProviderCapabilities",
   listEvents: "sascode.listEvents",
   executeDirectorCommand: "sascode.executeDirectorCommand",
@@ -107,6 +111,7 @@ export type SascodeGetWorkspaceSnapshotInput =
 
 export const SascodeWorkspaceSnapshot = Schema.Struct({
   attention: WorkspaceAttentionSnapshot,
+  providerAccounts: Schema.Array(ProviderAccount),
   providerCapabilities: Schema.Array(ProviderCapabilitySnapshot),
   generatedAt: IsoDateTime,
 });
@@ -143,6 +148,18 @@ export const SascodeRefreshProviderCapabilitiesInput = Schema.Struct({
 });
 export type SascodeRefreshProviderCapabilitiesInput =
   typeof SascodeRefreshProviderCapabilitiesInput.Type;
+
+export const SascodeSaveProviderAccountInput = ProviderAccount;
+export type SascodeSaveProviderAccountInput =
+  typeof SascodeSaveProviderAccountInput.Type;
+
+export const SascodeSetProviderAccountEnabledInput = Schema.Struct({
+  connectionId: ProviderAccount.fields.id,
+  enabled: Schema.Boolean,
+  updatedAt: IsoDateTime,
+});
+export type SascodeSetProviderAccountEnabledInput =
+  typeof SascodeSetProviderAccountEnabledInput.Type;
 
 export const SascodeDirectorCommand = Schema.Union([
   Schema.Struct({
@@ -492,6 +509,13 @@ export interface SascodeClientApi {
   ) => Promise<SascodeProjectSnapshot>;
   getWorkflow: (input: SascodeGetWorkflowInput) => Promise<Workflow | null>;
   listProviderCapabilities: () => Promise<ReadonlyArray<ProviderCapabilitySnapshot>>;
+  listProviderAccounts: () => Promise<ReadonlyArray<ProviderAccount>>;
+  saveProviderAccount: (
+    input: SascodeSaveProviderAccountInput,
+  ) => Promise<ProviderAccount>;
+  setProviderAccountEnabled: (
+    input: SascodeSetProviderAccountEnabledInput,
+  ) => Promise<ProviderAccount | null>;
   refreshProviderCapabilities: (
     input: SascodeRefreshProviderCapabilitiesInput,
   ) => Promise<ProviderCatalogRefreshResult>;

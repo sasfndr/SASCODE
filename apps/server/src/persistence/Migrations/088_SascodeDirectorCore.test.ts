@@ -55,6 +55,7 @@ layer("SASCODE backend migrations", (it) => {
           "sascode_step_up_requests",
           "sascode_task_contracts",
           "sascode_work_unit_execution_specs",
+          "sascode_workspace_layouts",
         ],
       );
     }),

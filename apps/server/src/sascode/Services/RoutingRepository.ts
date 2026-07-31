@@ -3,6 +3,7 @@ import {
   ProjectId,
   ProviderCapabilitySnapshot,
   ProviderConnection,
+  ProviderConnectionId,
   RoutingDecision,
   RoutingDecisionId,
   RoutingPolicy,
@@ -51,6 +52,15 @@ export interface RoutingRepositoryShape {
   readonly upsertConnection: (
     connection: ProviderConnection,
   ) => Effect.Effect<void, ProjectionRepositoryError>;
+
+  readonly getConnection: (
+    connectionId: ProviderConnectionId,
+  ) => Effect.Effect<Option.Option<ProviderConnection>, ProjectionRepositoryError>;
+
+  readonly listConnections: () => Effect.Effect<
+    ReadonlyArray<ProviderConnection>,
+    ProjectionRepositoryError
+  >;
 
   readonly saveCapabilitySnapshot: (
     input: SaveCapabilitySnapshotInput,

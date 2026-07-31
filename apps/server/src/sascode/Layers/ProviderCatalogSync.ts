@@ -1,17 +1,18 @@
 import {
   ProviderConnectionId,
   type ProviderConnection,
-  type ProviderKind,
+  ProviderKind,
   type SascodeActivityType,
   type SascodeModelModality,
   type SascodeToolCapability,
   type ServerProviderStatus,
 } from "@synara/contracts";
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Option, Schema } from "effect";
 
 import { ProviderHealth } from "../../provider/Services/ProviderHealth.ts";
 import { ServerSettingsService } from "../../serverSettings.ts";
 import { ProviderCapabilitySync } from "../Services/ProviderCapabilitySync.ts";
+import { RoutingRepository } from "../Services/RoutingRepository.ts";
 import {
   ProviderCatalogSync,
   type ProviderCatalogSyncShape,
@@ -99,6 +100,7 @@ type ProviderSettings = {
   readonly serverUrl?: string;
   readonly apiEndpoint?: string;
   readonly agentDir?: string;
+  readonly homePath?: string;
 };
 
 const health = (
@@ -139,6 +141,7 @@ const makeProviderCatalogSync = Effect.gen(function* () {
   const capabilitySync = yield* ProviderCapabilitySync;
   const providerHealth = yield* ProviderHealth;
   const settingsService = yield* ServerSettingsService;
+  const routing = yield* RoutingRepository;
 
   const refresh: ProviderCatalogSyncShape["refresh"] = (input) =>
     Effect.gen(function* () {
@@ -152,7 +155,76 @@ const makeProviderCatalogSync = Effect.gen(function* () {
       const snapshots = [];
       const failures: Array<{ provider: ProviderKind; detail: string }> = [];
 
+      // The server-settings profile remains the built-in account. Additional
+      // accounts are durable rows in the same connection registry and are not
+      // capped per provider.
       for (const provider of PROVIDERS) {
+        const providerSettings = settings.providers[
+          provider
+        ] as ProviderSettings;
+        if (!providerSettings.enabled) continue;
+        const connectionKind =
+          (provider === "opencode" || provider === "kilo") &&
+          providerSettings.serverUrl
+            ? "remote-runtime"
+            : provider === "opencode" ||
+                provider === "kilo" ||
+                provider === "pi"
+              ? "local-runtime"
+              : "subscription-cli";
+        const connectionId = ProviderConnectionId.makeUnsafe(
+          `provider:${provider}:default`,
+        );
+        const existingConnection = Option.getOrUndefined(
+          yield* routing.getConnection(connectionId),
+        );
+        yield* routing.upsertConnection({
+          id: connectionId,
+          providerKey: providerKey(provider),
+          displayName: displayName(provider),
+          connectionKind,
+          enabled: existingConnection?.enabled ?? true,
+          priority:
+            existingConnection?.priority ??
+            (provider === "claudeAgent" || provider === "codex"
+              ? 100
+              : provider === "antigravity"
+                ? 90
+                : 50),
+          config: {
+            providerKind: provider,
+            credentialMode:
+              connectionKind === "subscription-cli"
+                ? "cli-subscription"
+                : connectionKind,
+            ...(providerSettings.binaryPath
+              ? { binaryPath: providerSettings.binaryPath }
+              : {}),
+            ...(providerSettings.serverUrl
+              ? { serverUrl: providerSettings.serverUrl }
+              : {}),
+            ...(providerSettings.apiEndpoint
+              ? { apiEndpoint: providerSettings.apiEndpoint }
+              : {}),
+            ...(providerSettings.agentDir
+              ? { agentDir: providerSettings.agentDir }
+              : {}),
+            ...(providerSettings.homePath
+              ? { homePath: providerSettings.homePath }
+              : {}),
+          },
+          lastCapabilitySnapshotId:
+            existingConnection?.lastCapabilitySnapshotId ?? null,
+          createdAt: existingConnection?.createdAt ?? input.occurredAt,
+          updatedAt: input.occurredAt,
+        } satisfies ProviderConnection);
+      }
+
+      const connections = yield* routing.listConnections();
+      for (const connection of connections) {
+        if (!connection.enabled) continue;
+        const provider = connection.config.providerKind;
+        if (!Schema.is(ProviderKind)(provider)) continue;
         const providerSettings = settings.providers[
           provider
         ] as ProviderSettings;
@@ -166,46 +238,6 @@ const makeProviderCatalogSync = Effect.gen(function* () {
             ? (["image"] as const)
             : []),
         ];
-        const connectionKind =
-          (provider === "opencode" || provider === "kilo") &&
-          providerSettings.serverUrl
-            ? "remote-runtime"
-            : provider === "opencode" ||
-                provider === "kilo" ||
-                provider === "pi"
-              ? "local-runtime"
-              : "subscription-cli";
-        const connection: ProviderConnection = {
-          id: ProviderConnectionId.makeUnsafe(
-            `provider:${provider}:default`,
-          ),
-          providerKey: providerKey(provider),
-          displayName: displayName(provider),
-          connectionKind,
-          enabled: true,
-          priority:
-            provider === "claudeAgent" || provider === "codex"
-              ? 100
-              : provider === "antigravity"
-                ? 90
-                : 50,
-          config: {
-            providerKind: provider,
-            credentialMode:
-              connectionKind === "subscription-cli"
-                ? "cli-subscription"
-                : connectionKind,
-            ...(providerSettings.binaryPath
-              ? { binaryPath: providerSettings.binaryPath }
-              : {}),
-            ...(providerSettings.serverUrl
-              ? { serverUrl: providerSettings.serverUrl }
-              : {}),
-          },
-          lastCapabilitySnapshotId: null,
-          createdAt: input.occurredAt,
-          updatedAt: input.occurredAt,
-        };
         const outcome = yield* capabilitySync
           .sync({
             connection,
@@ -226,15 +258,17 @@ const makeProviderCatalogSync = Effect.gen(function* () {
             health: currentHealth.health,
             healthDetail: currentHealth.detail,
             authenticatedAccountLabel:
-              statusByProvider.get(provider)?.authLabel ?? null,
-            ...(providerSettings.binaryPath
-              ? { binaryPath: providerSettings.binaryPath }
+              connection.config.accountLabel ??
+              statusByProvider.get(provider)?.authLabel ??
+              null,
+            ...(connection.config.binaryPath
+              ? { binaryPath: connection.config.binaryPath }
               : {}),
-            ...(providerSettings.apiEndpoint
-              ? { apiEndpoint: providerSettings.apiEndpoint }
+            ...(connection.config.apiEndpoint
+              ? { apiEndpoint: connection.config.apiEndpoint }
               : {}),
-            ...(providerSettings.agentDir
-              ? { agentDir: providerSettings.agentDir }
+            ...(connection.config.agentDir
+              ? { agentDir: connection.config.agentDir }
               : {}),
             ...(input.cwd === undefined ? {} : { cwd: input.cwd }),
             discoveredAt: input.occurredAt,

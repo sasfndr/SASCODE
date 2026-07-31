@@ -19,6 +19,7 @@ import {
 
 export interface GrokAcpRuntimeSettings {
   readonly binaryPath?: string;
+  readonly homePath?: string;
   readonly model?: string;
   readonly reasoningEffort?: GrokModelOptions["reasoningEffort"];
 }
@@ -108,7 +109,12 @@ export function buildGrokAcpSpawnInput(
     command: grokSettings?.binaryPath || "grok",
     args,
     cwd,
-    env: buildProviderChildEnvironment({ provider: "grok" }),
+    env: buildProviderChildEnvironment({
+      provider: "grok",
+      ...(grokSettings?.homePath
+        ? { overrides: { HOME: grokSettings.homePath } }
+        : {}),
+    }),
   };
 }
 

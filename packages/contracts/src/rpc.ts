@@ -189,6 +189,7 @@ import {
 } from "./stats";
 import {
   DirectorEvent,
+  ProviderAccount,
   ProviderCapabilitySnapshot,
   ProviderCatalogRefreshResult,
   SASCODE_WS_METHODS,
@@ -213,6 +214,8 @@ import {
   SascodeProjectSnapshot,
   SascodePublishRoutingPolicyInput,
   SascodeRefreshProviderCapabilitiesInput,
+  SascodeSaveProviderAccountInput,
+  SascodeSetProviderAccountEnabledInput,
   SascodeRunWorkflowInput,
   SascodeRunWorkflowResult,
   SascodeScheduleWorkUnitInput,
@@ -422,6 +425,33 @@ export const WsSascodeListProviderCapabilitiesRpc = Rpc.make(
   {
     payload: Schema.Struct({}),
     success: Schema.Array(ProviderCapabilitySnapshot),
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeListProviderAccountsRpc = Rpc.make(
+  SASCODE_WS_METHODS.listProviderAccounts,
+  {
+    payload: Schema.Struct({}),
+    success: Schema.Array(ProviderAccount),
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeSaveProviderAccountRpc = Rpc.make(
+  SASCODE_WS_METHODS.saveProviderAccount,
+  {
+    payload: SascodeSaveProviderAccountInput,
+    success: ProviderAccount,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeSetProviderAccountEnabledRpc = Rpc.make(
+  SASCODE_WS_METHODS.setProviderAccountEnabled,
+  {
+    payload: SascodeSetProviderAccountEnabledInput,
+    success: Schema.NullOr(ProviderAccount),
     error: WsRpcError,
   },
 );
@@ -1323,6 +1353,9 @@ export const WsFeatureRpcGroup = RpcGroup.make(
   WsSascodeGetProjectSnapshotRpc,
   WsSascodeGetWorkflowRpc,
   WsSascodeListProviderCapabilitiesRpc,
+  WsSascodeListProviderAccountsRpc,
+  WsSascodeSaveProviderAccountRpc,
+  WsSascodeSetProviderAccountEnabledRpc,
   WsSascodeRefreshProviderCapabilitiesRpc,
   WsSascodeListEventsRpc,
   WsSascodeExecuteDirectorCommandRpc,

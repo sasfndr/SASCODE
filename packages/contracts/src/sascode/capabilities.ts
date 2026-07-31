@@ -85,6 +85,7 @@ export const ProviderCapabilitySnapshot = Schema.Struct({
   providerKind: Schema.optional(ProviderKind),
   displayName: TrimmedNonEmptyString,
   connectionKind: ProviderConnectionKind,
+  connectionPriority: Schema.optional(Schema.Number),
   health: ProviderConnectionHealth,
   healthDetail: Schema.optional(Schema.NullOr(TrimmedNonEmptyString)),
   models: Schema.Array(SascodeModelDescriptor).check(Schema.isMaxLength(512)),
@@ -108,6 +109,39 @@ export const ProviderConnection = Schema.Struct({
   updatedAt: IsoDateTime,
 });
 export type ProviderConnection = typeof ProviderConnection.Type;
+
+/**
+ * Non-secret process selectors for one provider account.
+ *
+ * Credentials remain owned by the provider CLI. SASCODE stores only the
+ * isolated profile location or remote endpoint needed to launch that account.
+ */
+export const ProviderAccountLaunchProfile = Schema.Struct({
+  binaryPath: Schema.optional(TrimmedNonEmptyString),
+  homePath: Schema.optional(TrimmedNonEmptyString),
+  configDir: Schema.optional(TrimmedNonEmptyString),
+  apiEndpoint: Schema.optional(TrimmedNonEmptyString),
+  serverUrl: Schema.optional(TrimmedNonEmptyString),
+  agentDir: Schema.optional(TrimmedNonEmptyString),
+});
+export type ProviderAccountLaunchProfile =
+  typeof ProviderAccountLaunchProfile.Type;
+
+export const ProviderAccount = Schema.Struct({
+  id: ProviderConnectionId,
+  providerKey: TrimmedNonEmptyString,
+  providerKind: ProviderKind,
+  displayName: TrimmedNonEmptyString,
+  accountLabel: Schema.NullOr(TrimmedNonEmptyString),
+  connectionKind: ProviderConnectionKind,
+  enabled: Schema.Boolean,
+  priority: Schema.Number,
+  launchProfile: ProviderAccountLaunchProfile,
+  lastCapabilitySnapshotId: Schema.optional(Schema.NullOr(CapabilitySnapshotId)),
+  createdAt: IsoDateTime,
+  updatedAt: IsoDateTime,
+});
+export type ProviderAccount = typeof ProviderAccount.Type;
 
 export const ProviderCatalogRefreshResult = Schema.Struct({
   snapshots: Schema.Array(ProviderCapabilitySnapshot),

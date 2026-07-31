@@ -96,7 +96,10 @@ import { QueuedTurnPromotionRepository } from "../../persistence/Services/Queued
 import { ManagedAttachmentRepository } from "../../persistence/Services/ManagedAttachments.ts";
 import { ServerConfig } from "../../config.ts";
 import { ServerSettingsService } from "../../serverSettings.ts";
-import { providerStartOptionsFromServerSettings } from "@synara/shared/serverSettings";
+import {
+  mergeProviderStartOptions,
+  providerStartOptionsFromServerSettings,
+} from "@synara/shared/serverSettings";
 import { clearWorkspaceIndexCache } from "../../workspaceEntries.ts";
 import {
   buildPriorTranscriptBootstrapText,
@@ -1052,8 +1055,11 @@ const make = Effect.gen(function* () {
         issue: `Provider '${preferredProvider}' is disabled in server settings revision ${settingsSnapshot.revision}.`,
       });
     }
-    const resolvedProviderOptions = providerStartOptionsFromServerSettings(
-      settingsSnapshot.settings,
+    const requestedProviderOptions =
+      options?.providerOptions ?? threadProviderOptions.get(threadId);
+    const resolvedProviderOptions = mergeProviderStartOptions(
+      providerStartOptionsFromServerSettings(settingsSnapshot.settings),
+      requestedProviderOptions,
     );
     const effectiveCwd = yield* resolveProjectedThreadWorkspaceCwd(thread);
     const workspaceState = resolveThreadWorkspaceState({
@@ -1099,6 +1105,16 @@ const make = Effect.gen(function* () {
                 ? "stopped"
                 : session.status,
           providerName: session.provider,
+          providerConnectionId:
+            session.providerConnectionId ??
+            resolvedProviderOptions.providerConnectionId ??
+            thread.session?.providerConnectionId ??
+            null,
+          providerAccountLabel:
+            session.providerAccountLabel ??
+            resolvedProviderOptions.providerAccountLabel ??
+            thread.session?.providerAccountLabel ??
+            null,
           runtimeMode: desiredRuntimeMode,
           // Provider turn ids are not orchestration turn ids.
           activeTurnId: null,
@@ -1110,6 +1126,18 @@ const make = Effect.gen(function* () {
 
     // Only reuse projected session state when the runtime still has a live session to attach to.
     const activeSession = yield* resolveActiveSession(threadId);
+    const requestedConnectionId =
+      requestedProviderOptions?.providerConnectionId;
+    const currentConnectionId =
+      activeSession?.providerConnectionId ??
+      thread.session?.providerConnectionId ??
+      undefined;
+    const connectionChangeRequested =
+      requestedConnectionId !== undefined &&
+      requestedConnectionId !== currentConnectionId;
+    const shouldBootstrapAccountHandoff =
+      connectionChangeRequested &&
+      !suppressContextBootstrapOnNextStartThreadIds.has(threadId);
     const existingSessionThreadId =
       thread.session && thread.session.status !== "stopped" && activeSession ? thread.id : null;
     if (existingSessionThreadId) {
@@ -1117,6 +1145,7 @@ const make = Effect.gen(function* () {
       const providerChanged =
         requestedModelSelection !== undefined &&
         requestedModelSelection.provider !== currentProvider;
+      const connectionChanged = connectionChangeRequested;
       const sessionModelSwitch =
         currentProvider === undefined
           ? "in-session"
@@ -1146,6 +1175,7 @@ const make = Effect.gen(function* () {
       if (
         !runtimeModeChanged &&
         !providerChanged &&
+        !connectionChanged &&
         !shouldRestartForModelChange &&
         !shouldRestartForModelSelectionChange
       ) {
@@ -1153,7 +1183,10 @@ const make = Effect.gen(function* () {
       }
 
       const resumeCursor =
-        providerChanged || shouldRestartForModelChange || runtimeModeChanged
+        providerChanged ||
+        connectionChanged ||
+        shouldRestartForModelChange ||
+        runtimeModeChanged
           ? undefined
           : (activeSession?.resumeCursor ?? undefined);
       yield* Effect.logInfo("provider command reactor restarting provider session", {
@@ -1165,6 +1198,9 @@ const make = Effect.gen(function* () {
         desiredRuntimeMode,
         runtimeModeChanged,
         providerChanged,
+        connectionChanged,
+        currentConnectionId,
+        requestedConnectionId,
         modelChanged,
         shouldRestartForModelChange,
         shouldRestartForModelSelectionChange,
@@ -1172,10 +1208,10 @@ const make = Effect.gen(function* () {
       });
       const restartedSession = yield* startProviderSession(resumeCursor);
       if (
-        shouldRegisterContextBootstrap &&
-        currentProvider === "droid" &&
-        !providerChanged &&
-        resumeCursor === undefined
+        (shouldRegisterContextBootstrap || shouldBootstrapAccountHandoff) &&
+        resumeCursor === undefined &&
+        (connectionChanged ||
+          (currentProvider === "droid" && !providerChanged))
       ) {
         freshSessionContextBootstrapThreadIds.add(threadId);
       }
@@ -1239,6 +1275,9 @@ const make = Effect.gen(function* () {
     }
 
     const startedSession = yield* startProviderSession();
+    if (shouldBootstrapAccountHandoff) {
+      freshSessionContextBootstrapThreadIds.add(threadId);
+    }
     // Record the exact selection the session was spawned with so later
     // restart-necessity checks compare against the live spawn state even when
     // the spawning dispatch carried no explicit model selection.

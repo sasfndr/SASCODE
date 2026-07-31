@@ -103,6 +103,7 @@ type AntigravitySessionContext = {
   harnessPolicyDelivered?: boolean;
   readonly lifecycleGeneration?: string;
   readonly binaryPath: string;
+  readonly homePath?: string;
   readonly turns: StoredTurn[];
   activeTurnId?: TurnId | undefined;
   activeProcess?: ChildProcess | undefined;
@@ -220,7 +221,7 @@ function appendBoundedOutput(current: string, chunk: unknown): string {
 export async function runAntigravityHelperProcess(
   command: string,
   args: string[],
-  options: { cwd?: string; timeoutMs?: number } = {},
+  options: { cwd?: string; timeoutMs?: number; homeDir?: string } = {},
 ): Promise<{
   stdout: string;
   stderr: string;
@@ -229,7 +230,17 @@ export async function runAntigravityHelperProcess(
   return await new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd: options.cwd,
-      env: buildProviderChildEnvironment({ provider: PROVIDER }),
+      env: buildProviderChildEnvironment({
+        provider: PROVIDER,
+        ...(options.homeDir
+          ? {
+              baseEnv: {
+                ...process.env,
+                HOME: options.homeDir,
+              },
+            }
+          : {}),
+      }),
       stdio: ["ignore", "pipe", "pipe"],
     });
     let stdout = "";
@@ -339,7 +350,10 @@ export async function ensureCapturePlugin(
   const installed = await (options.runHelper ?? runAntigravityHelperProcess)(
     binaryPath,
     ["plugin", "install", pluginDir],
-    { timeoutMs: PLUGIN_INSTALL_TIMEOUT_MS },
+    {
+      timeoutMs: PLUGIN_INSTALL_TIMEOUT_MS,
+      ...(options.homeDir ? { homeDir: options.homeDir } : {}),
+    },
   );
   if (installed.code !== 0) {
     throw new Error(installed.stderr.trim() || installed.stdout.trim() || "Plugin install failed.");
@@ -856,11 +870,13 @@ const makeAntigravityAdapter = (dependencies: AntigravityAdapterDependencies = {
           });
         }
         const binaryPath = trim(input.providerOptions?.antigravity?.binaryPath) ?? "agy";
+        const homePath = trim(input.providerOptions?.antigravity?.homePath);
         yield* Effect.tryPromise({
           try: () =>
             (dependencies.ensurePlugin ?? ensureCapturePlugin)(
               binaryPath,
               agentGatewayCredentials?.stdioProxy,
+              homePath ? { homeDir: homePath } : undefined,
             ),
           catch: (cause) =>
             new ProviderAdapterRequestError({
@@ -900,6 +916,7 @@ const makeAntigravityAdapter = (dependencies: AntigravityAdapterDependencies = {
             ? { lifecycleGeneration: input.lifecycleGeneration }
             : {}),
           binaryPath,
+          ...(homePath ? { homePath } : {}),
           turns: [],
           ...(conversationId ? { conversationId } : {}),
           ...(modelSelection?.options ? { modelOptions: modelSelection.options } : {}),
@@ -1067,6 +1084,14 @@ const makeAntigravityAdapter = (dependencies: AntigravityAdapterDependencies = {
             cwd: context.session.cwd ?? serverConfig.cwd,
             env: buildAntigravityTurnProcessEnvironment({
               eventFile,
+              ...(context.homePath
+                ? {
+                    baseEnv: {
+                      ...process.env,
+                      HOME: context.homePath,
+                    },
+                  }
+                : {}),
               ...(gatewaySessionLease && gatewayBootstrapToken
                 ? {
                     gatewayConnection: gatewaySessionLease.connection,

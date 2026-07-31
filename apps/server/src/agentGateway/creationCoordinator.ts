@@ -12,6 +12,7 @@ import {
   type OrchestrationThreadShell,
   type ProviderInteractionMode,
   type ProviderKind,
+  type ProviderStartOptions,
   type SynaraCreateThreadsInput,
   type SynaraCreateThreadsResult,
 } from "@synara/contracts";
@@ -102,6 +103,10 @@ interface CreationCoordinatorDependencies {
   readonly requireThreadShell: (
     threadId: string,
   ) => Effect.Effect<OrchestrationThreadShell, ToolInputError>;
+  readonly resolveProviderStartOptions?: (
+    connectionId: string,
+    provider: ProviderKind,
+  ) => Effect.Effect<ProviderStartOptions, unknown>;
 }
 
 export type GatewayCreationContext =
@@ -193,6 +198,7 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
     serverConfig,
     loadProviderAvailabilities,
     requireThreadShell,
+    resolveProviderStartOptions,
   } = dependencies;
   const lockIndex = yield* Semaphore.make(1);
   const locks = new Map<string, { readonly lock: Semaphore.Semaphore; users: number }>();
@@ -585,6 +591,28 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
               ),
             );
           }
+          const providerOptions =
+            spec.providerConnectionId === undefined
+              ? undefined
+              : yield* (
+                  resolveProviderStartOptions === undefined
+                    ? Effect.fail(
+                        new ToolInputError(
+                          "This task creation surface cannot select a provider account connection.",
+                        ),
+                      )
+                    : resolveProviderStartOptions(
+                        spec.providerConnectionId,
+                        target.provider,
+                      ).pipe(
+                        Effect.mapError(
+                          (error) =>
+                            new ToolInputError(
+                              `Provider account "${spec.providerConnectionId}" is unavailable. ${errorText(error)}`,
+                            ),
+                        ),
+                      )
+                );
           const title = spec.title ?? buildPromptThreadTitleFallback(spec.prompt);
           let worktreeRef: string | null = null;
           let copyChangesFrom: string | null = null;
@@ -667,6 +695,7 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
             projectId,
             workspaceRoot: project.workspaceRoot,
             target,
+            providerOptions,
             environment,
             runtimeMode,
             title,
@@ -1152,6 +1181,9 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
                       attachments: [],
                     },
                     modelSelection: entry.target,
+                    ...(entry.providerOptions === undefined
+                      ? {}
+                      : { providerOptions: entry.providerOptions }),
                     dispatchMode: "queue",
                     dispatchOrigin: "agent",
                     runtimeMode: entry.runtimeMode,
@@ -1171,6 +1203,12 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
                     projectId: entry.projectId,
                     title: entry.title,
                     target: entry.target,
+                    ...(entry.spec.providerConnectionId === undefined
+                      ? {}
+                      : {
+                          providerConnectionId:
+                            entry.spec.providerConnectionId,
+                        }),
                     provider: entry.target.provider,
                     model: entry.target.model,
                     runtimeMode: entry.runtimeMode,
@@ -1230,7 +1268,11 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
         withCreationPlanLock(
           context.kind === "provider-session"
             ? `${context.callerThreadId}\u0000${context.callerTurnId ?? "inactive"}`
-            : `${principalId}\u0000${input.requestId}`,
+            : `${
+                context.kind === "external-client"
+                  ? context.integrationId
+                  : context.directorId
+              }\u0000${input.requestId}`,
           effect,
         ),
       Effect.catch((error) =>

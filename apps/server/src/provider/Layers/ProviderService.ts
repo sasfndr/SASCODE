@@ -53,6 +53,7 @@ import {
 } from "effect";
 import * as Semaphore from "effect/Semaphore";
 import { nonEmptyTrimmed } from "@synara/shared/text";
+import { mergeProviderStartOptions } from "@synara/shared/serverSettings";
 
 import { ProviderValidationError } from "../Errors.ts";
 import { ProviderAdapterRegistry } from "../Services/ProviderAdapterRegistry.ts";
@@ -1510,16 +1511,36 @@ const makeProviderService = (options?: ProviderServiceLiveOptions) =>
         return yield* lifecycle.run(threadId, (lease) =>
           Effect.gen(function* () {
             const persistedBinding = Option.getOrUndefined(yield* directory.getBinding(threadId));
-            const effectiveResumeCursor =
-              input.resumeCursor ??
-              (persistedBinding?.provider === input.provider
-                ? persistedBinding.resumeCursor
-                : undefined);
-            const effectiveProviderOptions =
-              input.providerOptions ??
-              (persistedBinding?.provider === input.provider
+            const persistedProviderOptions =
+              persistedBinding?.provider === input.provider
                 ? readPersistedProviderOptions(persistedBinding.runtimePayload)
-                : undefined);
+                : undefined;
+            const accountConnectionChanged =
+              persistedBinding?.provider === input.provider &&
+              input.providerOptions?.providerConnectionId !== undefined &&
+              input.providerOptions.providerConnectionId !==
+                persistedProviderOptions?.providerConnectionId;
+            const effectiveResumeCursor =
+              accountConnectionChanged
+                ? undefined
+                : input.resumeCursor ??
+                  (persistedBinding?.provider === input.provider
+                    ? persistedBinding.resumeCursor
+                    : undefined);
+            const effectiveProviderOptions =
+              input.providerOptions?.providerConnectionId !== undefined
+                ? accountConnectionChanged
+                  ? input.providerOptions
+                  : mergeProviderStartOptions(
+                      persistedProviderOptions ?? {},
+                      input.providerOptions,
+                    )
+                : persistedProviderOptions?.providerConnectionId !== undefined
+                  ? mergeProviderStartOptions(
+                      input.providerOptions ?? {},
+                      persistedProviderOptions,
+                    )
+                  : input.providerOptions ?? persistedProviderOptions;
             const adapter = yield* registry.getByProvider(input.provider);
             let replacementStarted = false;
             const startAndPersistReplacement = Effect.gen(function* () {
@@ -1562,7 +1583,21 @@ const makeProviderService = (options?: ProviderServiceLiveOptions) =>
                   )}ms for thread '${threadId}'.`,
                 );
               }
-              const session = started.value;
+              const session: ProviderSession = {
+                ...started.value,
+                ...(effectiveProviderOptions?.providerConnectionId
+                  ? {
+                      providerConnectionId:
+                        effectiveProviderOptions.providerConnectionId,
+                    }
+                  : {}),
+                ...(effectiveProviderOptions?.providerAccountLabel
+                  ? {
+                      providerAccountLabel:
+                        effectiveProviderOptions.providerAccountLabel,
+                    }
+                  : {}),
+              };
               replacementStarted = true;
 
               if (session.provider !== adapter.provider) {
@@ -1701,8 +1736,22 @@ const makeProviderService = (options?: ProviderServiceLiveOptions) =>
           return null;
         }
 
+        const sourceProviderOptions = readPersistedProviderOptions(
+          sourceBinding.runtimePayload,
+        );
+        if (
+          input.providerOptions?.providerConnectionId !== undefined &&
+          sourceProviderOptions?.providerConnectionId !== undefined &&
+          input.providerOptions.providerConnectionId !==
+            sourceProviderOptions.providerConnectionId
+        ) {
+          // Native provider session identifiers are account-scoped. Falling
+          // back lets the orchestration layer bootstrap the retained transcript
+          // into a fresh session owned by the requested account.
+          return null;
+        }
         const effectiveProviderOptions =
-          input.providerOptions ?? readPersistedProviderOptions(sourceBinding.runtimePayload);
+          input.providerOptions ?? sourceProviderOptions;
         const sourceCwd = readPersistedCwd(sourceBinding.runtimePayload);
         yield* validateAutoRuntimeMode(
           "ProviderService.forkThread",
@@ -2612,15 +2661,28 @@ const makeProviderService = (options?: ProviderServiceLiveOptions) =>
             return session;
           }
 
+          const persistedProviderOptions = readPersistedProviderOptions(
+            binding.runtimePayload,
+          );
           const overrides: {
             resumeCursor?: ProviderSession["resumeCursor"];
             runtimeMode?: ProviderSession["runtimeMode"];
+            providerConnectionId?: string;
+            providerAccountLabel?: string;
           } = {};
           if (session.resumeCursor === undefined && binding.resumeCursor !== undefined) {
             overrides.resumeCursor = binding.resumeCursor;
           }
           if (binding.runtimeMode !== undefined) {
             overrides.runtimeMode = binding.runtimeMode;
+          }
+          if (persistedProviderOptions?.providerConnectionId !== undefined) {
+            overrides.providerConnectionId =
+              persistedProviderOptions.providerConnectionId;
+          }
+          if (persistedProviderOptions?.providerAccountLabel !== undefined) {
+            overrides.providerAccountLabel =
+              persistedProviderOptions.providerAccountLabel;
           }
           return Object.assign({}, session, overrides);
         });

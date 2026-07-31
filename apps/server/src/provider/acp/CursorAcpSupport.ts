@@ -31,6 +31,7 @@ import {
 export interface CursorAcpRuntimeCursorSettings {
   readonly apiEndpoint?: string;
   readonly binaryPath?: string;
+  readonly homePath?: string;
 }
 
 export const CURSOR_PARAMETERIZED_MODEL_PICKER_CAPABILITIES = {
@@ -102,7 +103,12 @@ export function buildCursorAcpSpawnInput(
     // Keep ACP startup browserless without forcing CI/noninteractive flags onto user turns.
     env: buildProviderChildEnvironment({
       provider: "cursor",
-      overrides: CURSOR_AGENT_BROWSERLESS_ENV,
+      overrides: {
+        ...CURSOR_AGENT_BROWSERLESS_ENV,
+        ...(cursorSettings?.homePath
+          ? { HOME: cursorSettings.homePath }
+          : {}),
+      },
     }),
   };
 }

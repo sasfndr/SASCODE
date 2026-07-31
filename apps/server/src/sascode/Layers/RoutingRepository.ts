@@ -180,6 +180,27 @@ const makeRoutingRepository = Effect.gen(function* () {
       `,
   });
 
+  const listConnectionRows = SqlSchema.findAll({
+    Request: Schema.Void,
+    Result: ProviderConnectionDbRow,
+    execute: () =>
+      sql`
+        SELECT
+          connection_id AS id,
+          provider_key AS "providerKey",
+          display_name AS "displayName",
+          connection_kind AS "connectionKind",
+          enabled,
+          priority,
+          config_json AS config,
+          last_capability_snapshot_id AS "lastCapabilitySnapshotId",
+          created_at AS "createdAt",
+          updated_at AS "updatedAt"
+        FROM sascode_provider_connections
+        ORDER BY priority DESC, provider_key ASC, connection_id ASC
+      `,
+  });
+
   const updateConnectionSnapshotRow = SqlSchema.void({
     Request: Schema.Struct({
       connectionId: ProviderConnection.fields.id,
@@ -202,21 +223,24 @@ const makeRoutingRepository = Effect.gen(function* () {
     execute: ({ snapshotId }) =>
       sql`
         SELECT
-          snapshot_id AS id,
-          connection_id AS "connectionId",
-          provider_key AS "providerKey",
-          provider_kind AS "providerKind",
-          display_name AS "displayName",
-          connection_kind AS "connectionKind",
-          health,
-          health_detail AS "healthDetail",
-          models_json AS models,
-          quota_json AS quota,
-          authenticated_account_label AS "authenticatedAccountLabel",
-          discovered_at AS "discoveredAt",
-          expires_at AS "expiresAt"
-        FROM sascode_capability_snapshots
-        WHERE snapshot_id = ${snapshotId}
+          snapshots.snapshot_id AS id,
+          snapshots.connection_id AS "connectionId",
+          snapshots.provider_key AS "providerKey",
+          snapshots.provider_kind AS "providerKind",
+          snapshots.display_name AS "displayName",
+          snapshots.connection_kind AS "connectionKind",
+          connections.priority AS "connectionPriority",
+          snapshots.health,
+          snapshots.health_detail AS "healthDetail",
+          snapshots.models_json AS models,
+          snapshots.quota_json AS quota,
+          snapshots.authenticated_account_label AS "authenticatedAccountLabel",
+          snapshots.discovered_at AS "discoveredAt",
+          snapshots.expires_at AS "expiresAt"
+        FROM sascode_capability_snapshots AS snapshots
+        LEFT JOIN sascode_provider_connections AS connections
+          ON connections.connection_id = snapshots.connection_id
+        WHERE snapshots.snapshot_id = ${snapshotId}
       `,
   });
 
@@ -232,6 +256,7 @@ const makeRoutingRepository = Effect.gen(function* () {
           snapshots.provider_kind AS "providerKind",
           snapshots.display_name AS "displayName",
           snapshots.connection_kind AS "connectionKind",
+          connections.priority AS "connectionPriority",
           snapshots.health,
           snapshots.health_detail AS "healthDetail",
           snapshots.models_json AS models,
@@ -437,6 +462,26 @@ const makeRoutingRepository = Effect.gen(function* () {
       ),
     );
 
+  const getConnection: RoutingRepositoryShape["getConnection"] = (connectionId) =>
+    selectConnectionRow({ connectionId }).pipe(
+      Effect.mapError(
+        toPersistenceSqlOrDecodeError(
+          "RoutingRepository.getConnection:query",
+          "RoutingRepository.getConnection:decode",
+        ),
+      ),
+    );
+
+  const listConnections: RoutingRepositoryShape["listConnections"] = () =>
+    listConnectionRows().pipe(
+      Effect.mapError(
+        toPersistenceSqlOrDecodeError(
+          "RoutingRepository.listConnections:query",
+          "RoutingRepository.listConnections:decode",
+        ),
+      ),
+    );
+
   const saveCapabilitySnapshot: RoutingRepositoryShape["saveCapabilitySnapshot"] = (input) =>
     sql
       .withTransaction(
@@ -563,6 +608,8 @@ const makeRoutingRepository = Effect.gen(function* () {
 
   return {
     upsertConnection,
+    getConnection,
+    listConnections,
     saveCapabilitySnapshot,
     getCapabilitySnapshot,
     listCurrentCapabilitySnapshots,

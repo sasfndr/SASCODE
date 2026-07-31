@@ -81,7 +81,9 @@ const providerCapabilitySyncLayer = ProviderCapabilitySyncLive.pipe(
 );
 
 const providerCatalogSyncLayer = ProviderCatalogSyncLive.pipe(
-  Layer.provide(providerCapabilitySyncLayer),
+  Layer.provide(
+    Layer.mergeAll(providerCapabilitySyncLayer, repositoryLayer),
+  ),
 );
 
 const taskContractsLayer = TaskContractsLive.pipe(
@@ -98,12 +100,16 @@ const executionCoordinatorLayer = DirectorExecutionCoordinatorLive.pipe(
   ),
 );
 
+const directorThreadLauncherLayer = DirectorThreadLauncherLive.pipe(
+  Layer.provide(repositoryLayer),
+);
+
 const attemptDispatcherLayer = AttemptDispatcherLive.pipe(
   Layer.provide(
     Layer.mergeAll(
       commandLayer,
       repositoryLayer,
-      DirectorThreadLauncherLive,
+      directorThreadLauncherLayer,
     ),
   ),
 );
@@ -169,7 +175,7 @@ export const SascodeRuntimeLayerLive = Layer.mergeAll(
   providerCatalogSyncLayer,
   taskContractsLayer,
   executionCoordinatorLayer,
-  DirectorThreadLauncherLive,
+  directorThreadLauncherLayer,
   attemptDispatcherLayer,
   recoveryLayer,
   workUnitOrchestratorLayer,

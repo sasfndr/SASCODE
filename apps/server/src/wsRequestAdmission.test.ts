@@ -21,6 +21,10 @@ describe("WsRequestAdmission", () => {
 
   it("classifies SASCODE owner mutations as control traffic", () => {
     expect(classifyWsRequest(SASCODE_WS_METHODS.publishRoutingPolicy)).toBe("control");
+    expect(classifyWsRequest(SASCODE_WS_METHODS.saveProviderAccount)).toBe("control");
+    expect(classifyWsRequest(SASCODE_WS_METHODS.setProviderAccountEnabled)).toBe(
+      "control",
+    );
     expect(classifyWsRequest(SASCODE_WS_METHODS.savePermissionGrant)).toBe("control");
     expect(classifyWsRequest(SASCODE_WS_METHODS.activateModule)).toBe("control");
     expect(classifyWsRequest(SASCODE_WS_METHODS.updateModuleInstance)).toBe("control");

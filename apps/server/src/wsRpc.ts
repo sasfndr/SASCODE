@@ -995,6 +995,25 @@ const makeWsRpcHandlersLayer = () =>
             sascode.listProviderCapabilities(),
             "Failed to list SASCODE provider capabilities",
           ),
+        [SASCODE_WS_METHODS.listProviderAccounts]: () =>
+          rpcEffect(
+            sascode.listProviderAccounts(),
+            "Failed to list SASCODE provider accounts",
+          ),
+        [SASCODE_WS_METHODS.saveProviderAccount]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.saveProviderAccount(input)),
+            ),
+            "Failed to save the SASCODE provider account",
+          ),
+        [SASCODE_WS_METHODS.setProviderAccountEnabled]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.setProviderAccountEnabled(input)),
+            ),
+            "Failed to update the SASCODE provider account",
+          ),
         [SASCODE_WS_METHODS.refreshProviderCapabilities]: (input) =>
           rpcEffect(
             requireSessionOwner.pipe(

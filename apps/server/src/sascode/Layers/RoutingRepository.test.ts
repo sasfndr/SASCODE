@@ -64,6 +64,7 @@ const snapshot: ProviderCapabilitySnapshot = {
   providerKind: "codex",
   displayName: "Codex Max",
   connectionKind: "subscription-cli",
+  connectionPriority: 100,
   health: "ready",
   healthDetail: null,
   models: [
@@ -227,6 +228,11 @@ repositoryLayer("RoutingRepository", (it) => {
       const router = yield* ModelRouter;
 
       yield* routing.upsertConnection(connection);
+      assert.deepStrictEqual(
+        Option.getOrThrow(yield* routing.getConnection(connection.id)),
+        connection,
+      );
+      assert.deepStrictEqual(yield* routing.listConnections(), [connection]);
       assert.isTrue(
         yield* routing.saveCapabilitySnapshot({
           snapshot,

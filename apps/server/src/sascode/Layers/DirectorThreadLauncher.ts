@@ -1,5 +1,6 @@
 import {
   ModelSelection,
+  ProviderConnectionId,
   type ProviderKind,
   type ServerProviderStatus,
   SynaraCreateThreadsResult,
@@ -27,6 +28,8 @@ import {
   DirectorThreadLauncher,
   type DirectorThreadLauncherShape,
 } from "../Services/DirectorThreadLauncher.ts";
+import { RoutingRepository } from "../Services/RoutingRepository.ts";
+import { providerStartOptionsForConnection } from "../providerAccounts.ts";
 
 const coerceOptionValue = (value: string): string | number | boolean => {
   if (value === "true") return true;
@@ -47,6 +50,7 @@ const makeDirectorThreadLauncher = Effect.gen(function* () {
   const serverConfig = yield* ServerConfig;
   const providerHealth = yield* ProviderHealth;
   const serverSettings = yield* ServerSettingsService;
+  const routing = yield* RoutingRepository;
 
   const loadProviderAvailabilities = Effect.gen(function* () {
     const [settings, statuses] = yield* Effect.all([
@@ -97,6 +101,34 @@ const makeDirectorThreadLauncher = Effect.gen(function* () {
     serverConfig,
     loadProviderAvailabilities,
     requireThreadShell,
+    resolveProviderStartOptions: (connectionId, provider) =>
+      routing
+        .getConnection(ProviderConnectionId.makeUnsafe(connectionId))
+        .pipe(
+          Effect.flatMap(
+            Option.match({
+              onNone: () =>
+                Effect.fail(
+                  new Error(`Provider connection "${connectionId}" was not found.`),
+                ),
+              onSome: (connection) => {
+                const options = providerStartOptionsForConnection(connection);
+                if (
+                  options === null ||
+                  connection.config.providerKind !== provider ||
+                  !connection.enabled
+                ) {
+                  return Effect.fail(
+                    new Error(
+                      `Provider connection "${connectionId}" is disabled or does not belong to "${provider}".`,
+                    ),
+                  );
+                }
+                return Effect.succeed(options);
+              },
+            }),
+          ),
+        ),
   });
 
   const launch: DirectorThreadLauncherShape["launch"] = (input) =>
@@ -149,6 +181,7 @@ const makeDirectorThreadLauncher = Effect.gen(function* () {
               prompt: input.prompt,
               title: input.title,
               target: modelSelection,
+              providerConnectionId: input.target.connectionId,
               environment: input.environment,
               ...(input.baseRef == null ? {} : { baseRef: input.baseRef }),
               runtimeMode: input.runtimeMode,

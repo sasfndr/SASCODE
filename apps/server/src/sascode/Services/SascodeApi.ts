@@ -1,5 +1,6 @@
 import type {
   DirectorEvent,
+  ProviderAccount,
   ProviderCapabilitySnapshot,
   ProviderCatalogRefreshResult,
   SascodeDirectorCommand,
@@ -23,6 +24,8 @@ import type {
   SascodeProjectSnapshot,
   SascodePublishRoutingPolicyInput,
   SascodeRefreshProviderCapabilitiesInput,
+  SascodeSaveProviderAccountInput,
+  SascodeSetProviderAccountEnabledInput,
   SascodeRunWorkflowInput,
   SascodeRunWorkflowResult,
   SascodeScheduleWorkUnitInput,
@@ -90,6 +93,19 @@ export interface SascodeApiShape {
     ReadonlyArray<ProviderCapabilitySnapshot>,
     ProjectionRepositoryError
   >;
+
+  readonly listProviderAccounts: () => Effect.Effect<
+    ReadonlyArray<ProviderAccount>,
+    ProjectionRepositoryError
+  >;
+
+  readonly saveProviderAccount: (
+    input: SascodeSaveProviderAccountInput,
+  ) => Effect.Effect<ProviderAccount, ProjectionRepositoryError>;
+
+  readonly setProviderAccountEnabled: (
+    input: SascodeSetProviderAccountEnabledInput,
+  ) => Effect.Effect<ProviderAccount | null, ProjectionRepositoryError>;
 
   readonly refreshProviderCapabilities: (
     input: SascodeRefreshProviderCapabilitiesInput,

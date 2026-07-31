@@ -10,6 +10,7 @@ import { Schema } from "effect";
 import { ProjectId, ThreadId, TurnId } from "./baseSchemas";
 import { ModelSelection, ProviderKind } from "./orchestration";
 import { ProviderModelDescriptor } from "./providerDiscovery";
+import { ProviderConnectionId } from "./sascode/core";
 import { ServerProviderAuthStatus } from "./server";
 
 export const SYNARA_GATEWAY_MAX_THREADS_PER_OPERATION = 20;
@@ -68,6 +69,7 @@ export const SynaraCreateThreadSpec = Schema.Struct({
   prompt: Schema.String.check(Schema.isNonEmpty()),
   title: Schema.optional(Schema.String.check(Schema.isNonEmpty())),
   target: ModelSelection,
+  providerConnectionId: Schema.optional(ProviderConnectionId),
   projectId: Schema.optional(ProjectId),
   environment: Schema.optional(Schema.Literals(["local", "worktree"])),
   baseRef: Schema.optional(Schema.String.check(Schema.isNonEmpty())),
@@ -146,6 +148,7 @@ export const SynaraCreatedThreadResult = Schema.Struct({
   projectId: ProjectId,
   title: Schema.String,
   target: ModelSelection,
+  providerConnectionId: Schema.optional(ProviderConnectionId),
   provider: ProviderKind,
   model: Schema.String,
   runtimeMode: Schema.Literals(["approval-required", "full-access"]),

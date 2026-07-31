@@ -28,6 +28,7 @@ import {
 export interface DroidAcpRuntimeSettings {
   readonly appendSystemPrompt?: string;
   readonly binaryPath?: string;
+  readonly homePath?: string;
   readonly model?: string;
   readonly reasoningEffort?: DroidModelOptions["reasoningEffort"];
 }
@@ -122,7 +123,12 @@ export function buildDroidAcpSpawnInput(
     command: resolveDroidCliBinaryPath(droidSettings?.binaryPath),
     args,
     cwd,
-    env: buildProviderChildEnvironment({ provider: "droid" }),
+    env: buildProviderChildEnvironment({
+      provider: "droid",
+      ...(droidSettings?.homePath
+        ? { overrides: { HOME: droidSettings.homePath } }
+        : {}),
+    }),
   };
 }
 

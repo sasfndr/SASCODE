@@ -839,6 +839,9 @@ export function makeDroidAdapter(
             ...(providerDroidOptions?.binaryPath !== undefined
               ? { binaryPath: providerDroidOptions.binaryPath }
               : {}),
+            ...(providerDroidOptions?.homePath !== undefined
+              ? { homePath: providerDroidOptions.homePath }
+              : {}),
             ...(droidModelSelection?.model ? { model: droidModelSelection.model } : {}),
             ...(droidModelSelection?.options?.reasoningEffort
               ? { reasoningEffort: droidModelSelection.options.reasoningEffort }

@@ -54,6 +54,8 @@ describe("deriveTurnStartSession", () => {
       threadId: THREAD_ID,
       status: "starting",
       providerName: "pi",
+      providerConnectionId: null,
+      providerAccountLabel: null,
       runtimeMode: "full-access",
       activeTurnId: null,
       lastError: null,

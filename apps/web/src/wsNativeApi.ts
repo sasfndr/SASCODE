@@ -734,6 +734,12 @@ export function createWsNativeApi(): NativeApi {
       getWorkflow: (input) => transport.request(SASCODE_WS_METHODS.getWorkflow, input),
       listProviderCapabilities: () =>
         transport.request(SASCODE_WS_METHODS.listProviderCapabilities, {}),
+      listProviderAccounts: () =>
+        transport.request(SASCODE_WS_METHODS.listProviderAccounts, {}),
+      saveProviderAccount: (input) =>
+        transport.request(SASCODE_WS_METHODS.saveProviderAccount, input),
+      setProviderAccountEnabled: (input) =>
+        transport.request(SASCODE_WS_METHODS.setProviderAccountEnabled, input),
       refreshProviderCapabilities: (input) =>
         transport.request(SASCODE_WS_METHODS.refreshProviderCapabilities, input),
       listEvents: (input) => transport.request(SASCODE_WS_METHODS.listEvents, input),

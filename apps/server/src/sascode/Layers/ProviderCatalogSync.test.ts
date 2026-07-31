@@ -2,6 +2,7 @@ import type {
   ProviderKind,
   ServerProviderStatus,
 } from "@synara/contracts";
+import { ProviderConnectionId } from "@synara/contracts";
 import { assert, it } from "@effect/vitest";
 import { Effect, Layer, Stream } from "effect";
 
@@ -16,6 +17,7 @@ import {
 import { SqlitePersistenceMemory } from "../../persistence/Layers/Sqlite.ts";
 import { ServerSettingsService } from "../../serverSettings.ts";
 import { ProviderCatalogSync } from "../Services/ProviderCatalogSync.ts";
+import { RoutingRepository } from "../Services/RoutingRepository.ts";
 import { ProviderCapabilitySyncLive } from "./ProviderCapabilitySync.ts";
 import { ProviderCatalogSyncLive } from "./ProviderCatalogSync.ts";
 import { RoutingRepositoryLive } from "./RoutingRepository.ts";
@@ -102,6 +104,7 @@ const catalogLayer = it.layer(
       Layer.provide(capabilityLayer),
       Layer.provide(healthLayer),
       Layer.provide(settingsLayer),
+      Layer.provide(routingLayer),
     ),
     capabilityLayer,
     routingLayer,
@@ -113,6 +116,26 @@ catalogLayer("ProviderCatalogSync", (it) => {
   it.effect("discovers configured subscription CLIs into one model catalog", () =>
     Effect.gen(function* () {
       const catalog = yield* ProviderCatalogSync;
+      const routing = yield* RoutingRepository;
+      yield* routing.upsertConnection({
+        id: ProviderConnectionId.makeUnsafe(
+          "provider:claudeAgent:second-max",
+        ),
+        providerKey: "claude",
+        displayName: "Claude Max — second account",
+        connectionKind: "subscription-cli",
+        enabled: true,
+        priority: 110,
+        config: {
+          providerKind: "claudeAgent",
+          credentialMode: "cli-subscription",
+          accountLabel: "second@example.com",
+          configDir: "/profiles/claude/second",
+        },
+        lastCapabilitySnapshotId: null,
+        createdAt: now,
+        updatedAt: now,
+      });
       const result = yield* catalog.refresh({
         occurredAt: now,
         cwd: "/tmp/sascode",
@@ -121,13 +144,25 @@ catalogLayer("ProviderCatalogSync", (it) => {
       assert.deepStrictEqual(result.failures, []);
       assert.deepStrictEqual(
         result.snapshots.map((snapshot) => snapshot.providerKey),
-        ["codex", "claude", "gemini"],
+        ["claude", "claude", "codex", "gemini"],
       );
       assert.deepStrictEqual(
         result.snapshots.map(
           (snapshot) => snapshot.models[0]?.family,
         ),
-        ["gpt", "opus", "gemini"],
+        ["opus", "opus", "gpt", "gemini"],
+      );
+      assert.strictEqual(
+        result.snapshots.filter(
+          (snapshot) => snapshot.providerKind === "claudeAgent",
+        ).length,
+        2,
+      );
+      assert.include(
+        result.snapshots.map(
+          (snapshot) => snapshot.authenticatedAccountLabel,
+        ),
+        "second@example.com",
       );
       assert.isTrue(
         result.snapshots.every(
@@ -136,6 +171,32 @@ catalogLayer("ProviderCatalogSync", (it) => {
             snapshot.models[0]?.capability.tools.includes("mcp"),
         ),
       );
+
+      const defaultClaudeId = ProviderConnectionId.makeUnsafe(
+        "provider:claudeAgent:default",
+      );
+      const defaultClaude = yield* routing.getConnection(defaultClaudeId);
+      assert.strictEqual(defaultClaude._tag, "Some");
+      if (defaultClaude._tag === "Some") {
+        yield* routing.upsertConnection({
+          ...defaultClaude.value,
+          enabled: false,
+          updatedAt: now,
+        });
+      }
+      const refreshed = yield* catalog.refresh({
+        occurredAt: now,
+        cwd: "/tmp/sascode",
+      });
+      assert.notInclude(
+        refreshed.snapshots.map((snapshot) => snapshot.connectionId),
+        defaultClaudeId,
+      );
+      const disabledDefault = yield* routing.getConnection(defaultClaudeId);
+      assert.strictEqual(disabledDefault._tag, "Some");
+      if (disabledDefault._tag === "Some") {
+        assert.isFalse(disabledDefault.value.enabled);
+      }
     }),
   );
 });

@@ -25,6 +25,10 @@ import { ResultIngestion } from "../Services/ResultIngestion.ts";
 import { ProviderCatalogSync } from "../Services/ProviderCatalogSync.ts";
 import { createSascodeProjectDefaults } from "../projectDefaults.ts";
 import { createSascodeFeaturePlan } from "../featureWorkflow.ts";
+import {
+  providerAccountToConnection,
+  providerConnectionToAccount,
+} from "../providerAccounts.ts";
 
 const makeSascodeApi = Effect.gen(function* () {
   const attempts = yield* AttemptDispatcher;
@@ -51,12 +55,17 @@ const makeSascodeApi = Effect.gen(function* () {
     Effect.all(
       [
         attention.getWorkspaceSnapshot(input),
+        routing.listConnections(),
         routing.listCurrentCapabilitySnapshots(),
       ],
       { concurrency: "unbounded" },
     ).pipe(
-      Effect.map(([attentionSnapshot, providerCapabilities]) => ({
+      Effect.map(([attentionSnapshot, connections, providerCapabilities]) => ({
         attention: attentionSnapshot,
+        providerAccounts: connections.flatMap((connection) => {
+          const account = providerConnectionToAccount(connection);
+          return account === null ? [] : [account];
+        }),
         providerCapabilities,
         generatedAt: input.now,
       })),
@@ -108,6 +117,52 @@ const makeSascodeApi = Effect.gen(function* () {
 
   const listProviderCapabilities: SascodeApiShape["listProviderCapabilities"] =
     () => routing.listCurrentCapabilitySnapshots();
+
+  const listProviderAccounts: SascodeApiShape["listProviderAccounts"] = () =>
+    routing.listConnections().pipe(
+      Effect.map((connections) =>
+        connections.flatMap((connection) => {
+          const account = providerConnectionToAccount(connection);
+          return account === null ? [] : [account];
+        }),
+      ),
+    );
+
+  const saveProviderAccount: SascodeApiShape["saveProviderAccount"] = (input) =>
+    routing
+      .upsertConnection(providerAccountToConnection(input))
+      .pipe(
+        Effect.andThen(routing.getConnection(input.id)),
+        Effect.map(
+          Option.flatMap((connection) =>
+            Option.fromNullable(providerConnectionToAccount(connection)),
+          ),
+        ),
+        Effect.map(Option.getOrElse(() => input)),
+      );
+
+  const setProviderAccountEnabled: SascodeApiShape["setProviderAccountEnabled"] = (
+    input,
+  ) =>
+    routing.getConnection(input.connectionId).pipe(
+      Effect.flatMap(
+        Option.match({
+          onNone: () => Effect.succeed(null),
+          onSome: (connection) => {
+            const account = providerConnectionToAccount(connection);
+            if (account === null) return Effect.succeed(null);
+            const updated = {
+              ...account,
+              enabled: input.enabled,
+              updatedAt: input.updatedAt,
+            };
+            return routing
+              .upsertConnection(providerAccountToConnection(updated))
+              .pipe(Effect.as(updated));
+          },
+        }),
+      ),
+    );
 
   const refreshProviderCapabilities: SascodeApiShape["refreshProviderCapabilities"] =
     (input) => providerCatalog.refresh(input);
@@ -452,6 +507,9 @@ const makeSascodeApi = Effect.gen(function* () {
     getProjectSnapshot,
     getWorkflow,
     listProviderCapabilities,
+    listProviderAccounts,
+    saveProviderAccount,
+    setProviderAccountEnabled,
     refreshProviderCapabilities,
     listEvents,
     executeDirectorCommand,
