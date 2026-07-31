@@ -23,30 +23,58 @@
 }
 
 /* The inherited chat/diff/terminal components read the app's semantic tokens.
- * Re-pointing those tokens inside the SASCODE shell lets every inherited
- * surface adopt Stillspace materials without forking a single component. */
-.sas-token-bridge {
-  --background: var(--sas-surface);
-  --foreground: var(--sas-text);
-  --card: var(--sas-surface-raised);
-  --card-foreground: var(--sas-text);
-  --popover: var(--sas-surface-raised);
-  --popover-foreground: var(--sas-text);
-  --muted-foreground: var(--sas-text-secondary);
-  --border: var(--sas-line);
-  --input: var(--sas-line-strong);
-  --ring: var(--sas-accent);
-  --color-background-surface: var(--sas-surface);
-  --color-background-panel: var(--sas-surface-raised);
-  --color-background-elevated-primary: var(--sas-surface-raised);
-  --color-text-foreground: var(--sas-text);
-  --color-text-foreground-secondary: var(--sas-text-secondary);
-  --color-text-foreground-tertiary: var(--sas-text-muted);
-  --color-border: var(--sas-line);
-  --color-border-light: var(--sas-line);
-  --color-border-heavy: var(--sas-line-strong);
-  --app-chat-code-surface: var(--sas-code-surface);
-  --app-content-card-radius: var(--sas-radius-lg);
+ * Re-pointing those tokens while the SASCODE shell is mounted lets every
+ * inherited surface adopt Stillspace materials without forking a component.
+ *
+ * `!important` is load-bearing, not laziness: the inherited theme engine writes
+ * its palette as *inline styles* on <html>, which outrank any stylesheet rule
+ * by specificity. This is the only mechanism that can override it, and it is
+ * correctly scoped — `data-sas-shell-mounted` is removed when the shell
+ * unmounts, so settings and other administrative routes keep the inherited
+ * palette exactly as before. */
+.sas-token-bridge,
+[data-sas-shell-mounted="true"] {
+  --background: var(--sas-surface) !important;
+  --foreground: var(--sas-text) !important;
+  --card: var(--sas-surface-raised) !important;
+  --card-foreground: var(--sas-text) !important;
+  --popover: var(--sas-surface-raised) !important;
+  --popover-foreground: var(--sas-text) !important;
+  --muted-foreground: var(--sas-text-secondary) !important;
+  --border: var(--sas-line) !important;
+  --input: var(--sas-line-strong) !important;
+  --ring: var(--sas-accent) !important;
+
+  --color-background-surface: var(--sas-surface) !important;
+  --color-background-surface-under: var(--sas-canvas) !important;
+  --color-background-panel: var(--sas-surface-raised) !important;
+  --color-background-control: var(--sas-surface-sunken) !important;
+  --color-background-control-opaque: var(--sas-surface-sunken) !important;
+  --color-background-editor-opaque: var(--sas-code-surface) !important;
+  --color-background-elevated-primary: var(--sas-surface-raised) !important;
+  --color-background-elevated-secondary: var(--sas-surface-sunken) !important;
+  --color-background-user-message: var(--sas-surface-sunken) !important;
+
+  --color-text-foreground: var(--sas-text) !important;
+  --color-text-foreground-secondary: var(--sas-text-secondary) !important;
+  --color-text-foreground-tertiary: var(--sas-text-muted) !important;
+  --color-text-accent: var(--sas-accent-ink) !important;
+  --color-icon-primary: var(--sas-text) !important;
+  --color-icon-secondary: var(--sas-text-secondary) !important;
+  --color-icon-tertiary: var(--sas-text-muted) !important;
+
+  --color-border: var(--sas-line) !important;
+  --color-border-light: var(--sas-line) !important;
+  --color-border-heavy: var(--sas-line-strong) !important;
+
+  --composer-surface: var(--sas-surface-raised) !important;
+  --app-composer-picker-surface: var(--sas-surface-raised) !important;
+  --app-user-message-background: var(--sas-surface-sunken) !important;
+  --app-chat-code-surface: var(--sas-code-surface) !important;
+  --app-settings-surface: var(--sas-surface) !important;
+  --app-content-card-radius: var(--sas-radius-lg) !important;
+  --composer-radius: var(--sas-radius-md) !important;
+  --radius: var(--sas-radius-sm) !important;
 }
 
 /* ── Materials ───────────────────────────────────────────────────── */

@@ -31,7 +31,12 @@ export interface EvaluateRoutingInput {
 export interface RoutingEvaluation {
   readonly role: AgentRoleDefinition;
   readonly candidates: ReadonlyArray<RoutingCandidate>;
-  readonly selected: ResolvedModelTarget | null;
+  /**
+   * Always present: `evaluateRouting` returns the `no-eligible-target` failure
+   * instead of a `RoutingEvaluation` when nothing is selectable, so callers do
+   * not have to re-check for null after narrowing off the failure variants.
+   */
+  readonly selected: ResolvedModelTarget;
   readonly fallbackOrder: ReadonlyArray<ResolvedModelTarget>;
   readonly rationale: string;
 }

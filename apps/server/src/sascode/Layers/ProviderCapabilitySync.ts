@@ -87,7 +87,11 @@ function capabilityModel(
   input: Parameters<ProviderCapabilitySyncShape["sync"]>[0],
 ): SascodeModelDescriptor {
   return {
-    slug: model.resolvedModel ?? model.slug,
+    // Must be the addressable selection slug, not `resolvedModel`: routing feeds
+    // this straight back into ModelSelection, and resolveAgentGatewayTarget
+    // matches on `slug`. `resolvedModel` is informational and not even unique
+    // (several selection slugs can resolve to the same upstream model).
+    slug: model.slug,
     family: inferFamily(model, input.familyAliases),
     displayName: model.name,
     capability: {

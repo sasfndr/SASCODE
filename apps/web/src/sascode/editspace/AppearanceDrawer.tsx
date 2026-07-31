@@ -9,7 +9,7 @@
 
 import { useCallback, useId } from "react";
 import type { SascodeThemeSettings, SascodeWorkspaceLayout } from "@synara/contracts";
-import { IconRotate2, IconX } from "@tabler/icons-react";
+import { IconLayoutBoardSplit, IconRotate2, IconX } from "@tabler/icons-react";
 
 import { SPECTRUM_STOPS, nearestSpectrumStop } from "../theme/spectrum";
 import {
@@ -36,6 +36,8 @@ export interface AppearanceDrawerProps {
   onToggleHideInactive: (value: boolean) => void;
   accessibility: StillspaceAccessibility;
   effective: { reducedMotion: boolean; reducedTransparency: boolean; highContrast: boolean };
+  editing: boolean;
+  onToggleEditing: () => void;
   onReset: () => void;
   onRecoverModules: () => void;
   onClose: () => void;
@@ -72,6 +74,29 @@ export function AppearanceDrawer(props: AppearanceDrawerProps) {
           <IconX size={15} stroke={1.7} />
         </button>
       </div>
+
+      {/* Edit Space lives here rather than behind a gesture: arranging the
+          workspace and styling it are the same intent, and a mode this
+          consequential needs a labelled control. */}
+      <button
+        type="button"
+        onClick={props.onToggleEditing}
+        aria-pressed={props.editing}
+        className="sas-transition sas-focusable flex items-center gap-2 rounded-[var(--sas-radius-sm)] px-3 py-2 text-[12px] font-medium"
+        style={{
+          backgroundColor: props.editing ? "var(--sas-accent-soft)" : "var(--sas-surface-sunken)",
+          color: props.editing ? "var(--sas-accent-ink)" : "var(--sas-text)",
+        }}
+      >
+        <IconLayoutBoardSplit size={14} stroke={1.7} aria-hidden="true" />
+        {props.editing ? "Leave Edit Space" : "Edit Space"}
+        <kbd
+          className="ms-auto rounded px-1.5 py-0.5 text-[10px]"
+          style={{ backgroundColor: "var(--sas-surface-raised)", color: "var(--sas-text-muted)" }}
+        >
+          ⌘⇧E
+        </kbd>
+      </button>
 
       <section>
         <div className="mb-2 flex items-center justify-between">

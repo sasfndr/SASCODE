@@ -216,6 +216,16 @@ const makeDirectorEventStore = Effect.gen(function* () {
       ),
     );
 
+  // The SqlSchema read-backs inside commitCommand fail with a raw SchemaError
+  // when a stored row no longer matches its schema. commitCommand's error
+  // channel also carries the caller's mutation error `E`, so it cannot be
+  // narrowed at the end of the pipeline — map each read at its concrete call
+  // site instead, exactly as getReceipt/listEvents do.
+  const toCommitReadError = toPersistenceSqlOrDecodeError(
+    "DirectorEventStore.commitCommand:query",
+    "DirectorEventStore.commitCommand:decode",
+  );
+
   const commitCommand: DirectorEventStoreShape["commitCommand"] = (
     input,
     mutation,
@@ -234,7 +244,7 @@ const makeDirectorEventStore = Effect.gen(function* () {
         Effect.gen(function* () {
           const existing = yield* getReceiptRow({
             commandId: input.context.commandId,
-          });
+          }).pipe(Effect.mapError(toCommitReadError));
           if (Option.isSome(existing)) {
             if (
               existing.value.fingerprintVersion !== FINGERPRINT_VERSION ||
@@ -248,7 +258,7 @@ const makeDirectorEventStore = Effect.gen(function* () {
             }
             const event = yield* getEventBySequence({
               sequence: existing.value.resultSequence,
-            });
+            }).pipe(Effect.mapError(toCommitReadError));
             if (Option.isNone(event)) {
               return yield* new DirectorEventInvariantError({
                 commandId: input.context.commandId,
@@ -333,7 +343,9 @@ const makeDirectorEventStore = Effect.gen(function* () {
               ${commandFingerprint}
             )
           `;
-          const event = yield* getEventBySequence({ sequence });
+          const event = yield* getEventBySequence({ sequence }).pipe(
+            Effect.mapError(toCommitReadError),
+          );
           if (Option.isNone(event)) {
             return yield* new DirectorEventInvariantError({
               commandId: input.context.commandId,

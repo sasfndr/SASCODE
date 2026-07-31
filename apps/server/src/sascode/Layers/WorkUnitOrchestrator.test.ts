@@ -319,15 +319,19 @@ testLayer("WorkUnitOrchestrator", (it) => {
         actorId: "sas",
       });
       assert.strictEqual(scheduled.disposition, "scheduled");
-      assert.strictEqual(scheduled.attempt?.status, "queued");
-      assert.strictEqual(scheduled.attempt?.threadId, `thread:${scheduled.attempt.id}`);
+      const attempt = scheduled.attempt;
+      if (attempt === null) {
+        assert.fail("A scheduled work unit must return its attempt.");
+      }
+      assert.strictEqual(attempt.status, "queued");
+      assert.strictEqual(attempt.threadId, `thread:${attempt.id}`);
       assert.strictEqual(launches.length, 1);
       assert.strictEqual(launches[0]?.target.providerKey, "codex");
       assert.strictEqual(launches[0]?.target.modelSlug, "gpt-5.6-sol");
       assert.include(launches[0]?.prompt ?? "", "SASCODE Sealed Task Contract");
 
       const contract = yield* context.getTaskContract({
-        taskContractId: scheduled.attempt!.taskContractId,
+        taskContractId: attempt.taskContractId,
       });
       assert.isTrue(Option.isSome(contract));
 

@@ -18,6 +18,7 @@ import { AmbientFrame } from "./AmbientFrame";
 import { AttentionLayer } from "../attention/AttentionLayer";
 import { DirectorEventProvider, useDirectorEventStatus } from "../events/DirectorEventProvider";
 import { EditSpaceLayer } from "../editspace/EditSpaceLayer";
+import { FirstRun } from "../onboarding/FirstRun";
 import { ProjectOverview } from "../overview/ProjectOverview";
 import { ProjectSpace } from "../project-space/ProjectSpace";
 import { ProjectSpaceSkeleton } from "../sessions/SessionSurfaceSkeleton";
@@ -294,6 +295,34 @@ function SascodeShellInner({ routeThreadId, search, splitViewId }: SascodeShellP
   }, [activeProject, spaceData.cards]);
 
   if (!hydrated) return <ProjectSpaceSkeleton />;
+
+  // A workspace with no projects has nothing to be spatial about yet. First run
+  // still lives inside the shell so the frame, theme, and connection health are
+  // already true before the first project exists.
+  if (projects.length === 0) {
+    return (
+      <div className="sas-root relative flex h-dvh min-h-0 w-full flex-col overflow-hidden">
+        <AmbientFrame
+          projects={projects}
+          activeIndex={0}
+          activeProject={null}
+          activeSessionTitle={null}
+          attention={attention}
+          connection={connection}
+          editSpaceActive={false}
+          onOpenOverview={ui.openOverview}
+          onOpenCommand={ui.openOverview}
+          onToggleAppearance={() => ui.setAppearanceOpen(!ui.appearanceOpen)}
+          onToggleEditSpace={toggleEditSpace}
+          onSelectProject={ui.setActiveProjectIndex}
+          onFocusAttention={() => undefined}
+        />
+        <div className="min-h-0 flex-1">
+          <FirstRun />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

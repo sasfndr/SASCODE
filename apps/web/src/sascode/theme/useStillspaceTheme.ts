@@ -161,6 +161,14 @@ export function useStillspaceTheme(settings: SascodeThemeSettings): StillspaceTh
     root.dataset["sasMotion"] = effective.reducedMotion ? "reduced" : settings.motion;
     root.dataset["sasContrast"] = effective.highContrast ? "high" : "normal";
     root.dataset["sasAppearance"] = resolved.light ? "light" : "dark";
+    // Marks the document so the inherited-token bridge applies globally. Base UI
+    // portals menus, dialogs, and popovers at the body, outside the shell's DOM
+    // subtree — without this they would keep the inherited palette and read as
+    // borrowed chrome inside a Stillspace workspace.
+    root.dataset["sasShellMounted"] = "true";
+    return () => {
+      delete root.dataset["sasShellMounted"];
+    };
   }, [effective.highContrast, effective.reducedMotion, resolved, settings.motion]);
 
   // Keep the inherited engine's variant aligned so a chat bubble, diff gutter,

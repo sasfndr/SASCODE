@@ -314,6 +314,15 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
   };
 
   const run = (input: typeof SynaraCreateThreadsInput.Type, context: GatewayCreationContext) => {
+    // Derived from `context` alone, so it is hoisted out of the generator: the
+    // `withCreationPlanLock` key below is built in the `.pipe()` chain, which
+    // does not close over the generator body's scope.
+    const principalId =
+      context.kind === "provider-session"
+        ? context.callerThreadId
+        : context.kind === "external-client"
+          ? context.integrationId
+          : context.directorId;
     return Effect.gen(function* () {
       if (context.kind === "provider-session" && context.callerTurnId === null) {
         return yield* Effect.fail(
@@ -336,12 +345,6 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
         context.kind === "provider-session"
           ? yield* requireThreadShell(context.callerThreadId)
           : null;
-      const principalId =
-        context.kind === "provider-session"
-          ? context.callerThreadId
-          : context.kind === "external-client"
-            ? context.integrationId
-            : context.directorId;
       const internalCallerThreadId =
         context.kind === "internal-director"
           ? `sascode-director:${context.directorId}`

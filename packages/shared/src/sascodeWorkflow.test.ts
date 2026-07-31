@@ -35,7 +35,7 @@ const unit = (
     createdAt: now,
     updatedAt: now,
     terminalAt: null,
-  }) as WorkUnit;
+  }) as unknown as WorkUnit;
 
 const workflow = (
   units: ReadonlyArray<WorkUnit>,

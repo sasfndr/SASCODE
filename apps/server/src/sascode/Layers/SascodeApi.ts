@@ -166,23 +166,38 @@ const makeSascodeApi = Effect.gen(function* () {
           ),
         );
       case "attempt.advance":
-        return commands.advanceAttempt(command).pipe(
-          Effect.map(
-            (result): SascodeDirectorCommandResult => ({
-              resultKind: "attempt",
-              ...result,
-            }),
-          ),
-        );
+        return commands
+          .advanceAttempt({
+            ...command,
+            // The wire schema declares these optional AND nullable, which under
+            // exactOptionalPropertyTypes widens to `| undefined`. The command
+            // service collapses absent/null to null anyway, so normalise here
+            // rather than widening the service's input type.
+            error: command.error ?? null,
+          })
+          .pipe(
+            Effect.map(
+              (result): SascodeDirectorCommandResult => ({
+                resultKind: "attempt",
+                ...result,
+              }),
+            ),
+          );
       case "attempt.attach-thread":
-        return commands.attachThread(command).pipe(
-          Effect.map(
-            (result): SascodeDirectorCommandResult => ({
-              resultKind: "attempt",
-              ...result,
-            }),
-          ),
-        );
+        return commands
+          .attachThread({
+            ...command,
+            worktreePath: command.worktreePath ?? null,
+            baselineGitRef: command.baselineGitRef ?? null,
+          })
+          .pipe(
+            Effect.map(
+              (result): SascodeDirectorCommandResult => ({
+                resultKind: "attempt",
+                ...result,
+              }),
+            ),
+          );
     }
   };
 
@@ -207,7 +222,7 @@ const makeSascodeApi = Effect.gen(function* () {
     });
 
   const subscribeEvents: SascodeApiShape["subscribeEvents"] = (input) =>
-    Stream.unwrapScoped(
+    Stream.unwrap(
       Effect.gen(function* () {
         const live = yield* events.subscribeEvents;
         const highWater = yield* events.getHighWaterSequence;

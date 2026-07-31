@@ -146,6 +146,8 @@ export function EditSpaceLayer(props: EditSpaceLayerProps) {
       }
       accessibility={props.accessibility}
       effective={props.effective}
+      editing={props.editing}
+      onToggleEditing={props.editing ? props.onExit : props.onEnterEditing}
       onReset={controller.reset}
       onRecoverModules={controller.recoverModules}
       onClose={props.onCloseAppearance}
@@ -252,25 +254,7 @@ export function EditSpaceLayer(props: EditSpaceLayerProps) {
           {drawer}
         </div>
       ) : (
-        drawer ? (
-          <div className="absolute inset-y-0 right-0 z-30 flex p-3">
-            <div className="flex flex-col gap-2">
-              {drawer}
-              <button
-                type="button"
-                onClick={props.onEnterEditing}
-                className="sas-transition sas-focusable rounded-[var(--sas-radius-sm)] py-2 text-[12px] font-medium"
-                style={{
-                  backgroundColor: "var(--sas-surface-raised)",
-                  color: "var(--sas-text)",
-                  border: "1px solid var(--sas-line-strong)",
-                }}
-              >
-                Edit Space
-              </button>
-            </div>
-          </div>
-        ) : null
+        drawer ? <div className="absolute inset-y-0 right-0 z-30 flex p-3">{drawer}</div> : null
       )}
 
       {controller.conflict ? (

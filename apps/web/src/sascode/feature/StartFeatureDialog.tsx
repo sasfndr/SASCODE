@@ -7,10 +7,11 @@
 // at bootstrap, so nobody has to configure a routing table before they can
 // work. Advanced routing exists, but folded away.
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type {
   ProjectId,
   SascodePermissionProfile,
+  SascodeStartFeatureInput,
   SascodeStartFeatureResult,
 } from "@synara/contracts";
 import { IconChevronDown, IconLoader2, IconX } from "@tabler/icons-react";
@@ -55,9 +56,21 @@ export function StartFeatureDialog(props: StartFeatureDialogProps) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
-  const [bootstrapAttempted, setBootstrapAttempted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SascodeStartFeatureResult | null>(null);
+
+  /**
+   * The exact payload of the first submit, kept verbatim for any retry.
+   *
+   * Director command identity is bound to command *content*, not just the
+   * request id: replaying the same `requestId` with a refreshed `occurredAt`
+   * is rejected as a conflicting identity, and minting a fresh `requestId`
+   * silently creates a duplicate workflow. Since `startFeature` commits the
+   * workflow before scheduling can fail, a retry must replay byte-identically
+   * or it corrupts durable state.
+   */
+  const attemptedInputRef = useRef<SascodeStartFeatureInput | null>(null);
+  const bootstrapAttemptedRef = useRef(false);
 
   const canSubmit = useMemo(
     () => title.trim().length > 0 && outcome.trim().length > 0 && request.trim().length > 0,
@@ -68,8 +81,10 @@ export function StartFeatureDialog(props: StartFeatureDialogProps) {
     if (!canSubmit || submitting) return;
     setSubmitting(true);
     setError(null);
-    try {
-      const started = await startFeature({
+
+    const input: SascodeStartFeatureInput =
+      attemptedInputRef.current ??
+      ({
         requestId: crypto.randomUUID(),
         projectId: props.projectId,
         title: title.trim(),
@@ -86,15 +101,19 @@ export function StartFeatureDialog(props: StartFeatureDialogProps) {
         maxAttempts,
         baselineGitRef: baselineGitRef.trim().length > 0 ? baselineGitRef.trim() : null,
         occurredAt: new Date().toISOString(),
-      });
+      } as SascodeStartFeatureInput);
+    attemptedInputRef.current = input;
+
+    try {
+      const started = await startFeature(input);
       setResult(started);
       props.onStarted(started);
     } catch (cause) {
       // A project that has never been bootstrapped has no routing policy to
-      // plan against. Rather than dead-ending, do the one-time setup and retry
-      // once — the operation is idempotent at its durable boundaries.
-      if (looksLikeMissingProjectSetup(cause) && !bootstrapAttempted) {
-        setBootstrapAttempted(true);
+      // plan against. Rather than dead-ending, run the one-time setup and
+      // replay the identical input once.
+      if (looksLikeMissingProjectSetup(cause) && !bootstrapAttemptedRef.current) {
+        bootstrapAttemptedRef.current = true;
         try {
           await bootstrapProject({
             projectId: props.projectId,
@@ -106,11 +125,12 @@ export function StartFeatureDialog(props: StartFeatureDialogProps) {
             maxParallelWorkUnits: concurrencyLimit,
             occurredAt: new Date().toISOString(),
           });
-          setSubmitting(false);
-          await submit();
+          const started = await startFeature(input);
+          setResult(started);
+          props.onStarted(started);
           return;
-        } catch (bootstrapCause) {
-          setError(describeRpcError(bootstrapCause, "Could not set up this project"));
+        } catch (retryCause) {
+          setError(describeRpcError(retryCause, "Could not set up this project"));
           return;
         }
       }
@@ -120,7 +140,6 @@ export function StartFeatureDialog(props: StartFeatureDialogProps) {
     }
   }, [
     baselineGitRef,
-    bootstrapAttempted,
     canSubmit,
     concurrencyLimit,
     includeBackend,

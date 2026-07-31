@@ -244,7 +244,9 @@ const makeAttemptDispatcher = Effect.gen(function* () {
                         nextStatus: "failed",
                         error: error.detail,
                       })
-                      .pipe(Effect.zipRight(Effect.fail(error))),
+                      // Record the failed attempt, then surface the original
+                      // launch error rather than the compensation's result.
+                      .pipe(Effect.flatMap(() => Effect.fail(error))),
             ),
           );
         attempt = (

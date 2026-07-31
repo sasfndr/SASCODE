@@ -151,7 +151,9 @@ export function ProjectOverview(props: ProjectOverviewProps) {
         </button>
       </header>
 
-      <div className="sas-scroll flex min-h-0 flex-1 items-center gap-5 px-8 pb-6">
+      {/* Centred until the row overflows, so one or two projects do not read as
+          a list that ran out rather than a considered arrangement. */}
+      <div className="sas-scroll flex min-h-0 flex-1 items-center justify-center gap-5 px-8 pb-6">
         {filtered.length === 0 ? (
           <p
             className="mx-auto text-[13px]"
@@ -216,12 +218,29 @@ export function ProjectOverview(props: ProjectOverviewProps) {
                   ) : null}
                 </div>
 
-                {/* The card's own atmosphere: a compact echo of the project space. */}
+                {/* A compact echo of the project space: same horizon, same key
+                    light, so a card reads as a small view into that place. */}
                 <div
                   className="relative mx-3 min-h-[110px] flex-1 overflow-hidden rounded-[var(--sas-radius-md)]"
-                  style={{ backgroundColor: "var(--sas-canvas-deep)" }}
+                  style={{ backgroundColor: "var(--sas-canvas)" }}
+                  aria-hidden="true"
                 >
-                  <div className="sas-aura" />
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        "linear-gradient(180deg, color-mix(in srgb, var(--sas-surface) 42%, transparent) 0%," +
+                        " transparent 46%), linear-gradient(180deg, transparent 44%, var(--sas-canvas-deep) 100%)",
+                    }}
+                  />
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        "radial-gradient(96% 42% at 50% 78%, var(--sas-aura-soft) 0%, transparent 70%)," +
+                        " radial-gradient(62% 50% at 80% 4%, color-mix(in srgb, var(--sas-aura) 24%, transparent) 0%, transparent 64%)",
+                    }}
+                  />
                 </div>
 
                 <div className="space-y-1.5 p-3">

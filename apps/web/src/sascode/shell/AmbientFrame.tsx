@@ -211,9 +211,8 @@ export function AmbientFrame(props: AmbientFrameProps) {
           icon={<IconLayoutGrid size={15} stroke={1.6} />}
         />
         <FrameButton
-          label={props.editSpaceActive ? "Leave Edit Space" : "Appearance and Edit Space"}
+          label="Appearance and Edit Space"
           onClick={props.onToggleAppearance}
-          onDoubleClick={props.onToggleEditSpace}
           active={props.editSpaceActive}
           icon={<IconAdjustmentsHorizontal size={15} stroke={1.6} />}
         />
