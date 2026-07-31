@@ -11,6 +11,8 @@ import {
   RestoreOrCreateChatRoute,
   type RestoreRouteResolver,
 } from "../components/RestoreOrCreateChatRoute";
+import type { DiffRouteSearch } from "../diffRouteSearch";
+import { SascodeShell } from "../sascode/shell/SascodeShell";
 import { readSidebarUiState } from "../components/Sidebar.uiState";
 import { useComposerDraftStore } from "../composerDraftStore";
 import { useHandleNewChat } from "../hooks/useHandleNewChat";
@@ -30,6 +32,9 @@ import { resolveChatIndexRestoreRoute, type ChatIndexLandingSpace } from "./-cha
 export interface ChatIndexSearch {
   readonly space?: string | undefined;
 }
+
+/** The landing route carries no diff/panel state of its own. */
+const EMPTY_DIFF_ROUTE_SEARCH: DiffRouteSearch = {};
 
 function ChatIndexRouteView() {
   const { handleNewChat } = useHandleNewChat();
@@ -89,6 +94,14 @@ function ChatIndexRouteView() {
       landingSpace,
     });
   };
+
+  // With nothing to restore, SASCODE lands in the project space itself rather
+  // than minting a chat behind the user's back. That is what makes first run,
+  // project bootstrap, and the empty-project state reachable instead of being
+  // skipped past by an auto-created thread.
+  if (threadIds.length === 0) {
+    return <SascodeShell routeThreadId={null} search={EMPTY_DIFF_ROUTE_SEARCH} splitViewId={null} />;
+  }
 
   return (
     <RestoreOrCreateChatRoute

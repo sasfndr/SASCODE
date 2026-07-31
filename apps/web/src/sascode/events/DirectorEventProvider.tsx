@@ -33,6 +33,11 @@ import {
   invalidateSascodeWorkflow,
   invalidateSascodeWorkspaceAttention,
 } from "../queries/sascodeQueries";
+import {
+  applyAttemptEvents,
+  emptyAttemptProjection,
+  type AttemptProjection,
+} from "./attemptProjection";
 
 /** Bursts of lifecycle events are common; one flush per window keeps refetches sane. */
 const FLUSH_WINDOW_MS = 120;
@@ -56,8 +61,19 @@ const DirectorEventContext = createContext<DirectorEventStatus>({
   error: null,
 });
 
+/**
+ * The attempt -> thread join, rebuilt from the replayed event stream. Kept in a
+ * separate context from status so a status tick cannot rerender every session
+ * card, and vice versa.
+ */
+const AttemptProjectionContext = createContext<AttemptProjection>(emptyAttemptProjection);
+
 export function useDirectorEventStatus(): DirectorEventStatus {
   return useContext(DirectorEventContext);
+}
+
+export function useAttemptProjection(): AttemptProjection {
+  return useContext(AttemptProjectionContext);
 }
 
 export function DirectorEventProvider({ children }: { children: ReactNode }) {
@@ -69,6 +85,7 @@ export function DirectorEventProvider({ children }: { children: ReactNode }) {
     error: null,
   });
 
+  const [attempts, setAttempts] = useState<AttemptProjection>(emptyAttemptProjection);
   const cursorRef = useRef<DirectorCursorState>(initialDirectorCursorState);
   const pendingRef = useRef<DirectorEvent[]>([]);
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -79,6 +96,8 @@ export function DirectorEventProvider({ children }: { children: ReactNode }) {
     const batch = pendingRef.current;
     if (batch.length === 0) return;
     pendingRef.current = [];
+
+    setAttempts((current) => applyAttemptEvents(current, batch));
 
     const plan = collapseInvalidations(batch);
     for (const projectId of plan.projectIds) {
@@ -191,5 +210,11 @@ export function DirectorEventProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => status, [status]);
 
-  return <DirectorEventContext.Provider value={value}>{children}</DirectorEventContext.Provider>;
+  return (
+    <DirectorEventContext.Provider value={value}>
+      <AttemptProjectionContext.Provider value={attempts}>
+        {children}
+      </AttemptProjectionContext.Provider>
+    </DirectorEventContext.Provider>
+  );
 }

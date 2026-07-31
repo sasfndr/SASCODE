@@ -1,6 +1,12 @@
 import type { ResolvedKeybindingsConfig } from "@synara/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { Outlet, createFileRoute, useLocation, useNavigate } from "@tanstack/react-router";
+import {
+  Outlet,
+  createFileRoute,
+  useLocation,
+  useMatches,
+  useNavigate,
+} from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -550,12 +556,43 @@ const SIDEBAR_GAP_CLASS =
  *  A sidebar border here draws a full-height vertical line through the titlebar seam. */
 const SIDEBAR_INNER_CLASS = "app-sidebar-surface";
 
+/**
+ * Routes whose surface is the SASCODE work shell. These render project spaces
+ * and must not mount a project/session sidebar — the decisive layout rule of
+ * the product. Everything else (settings, pull requests, automations, kanban,
+ * plugins, studio) keeps the inherited contained navigation, which the design
+ * contract explicitly permits for secondary administrative surfaces.
+ */
+const SASCODE_WORK_ROUTE_IDS: ReadonlySet<string> = new Set(["/_chat/", "/_chat/$threadId"]);
+
 function ChatRouteLayout() {
   const isEditorView = useLocation({
     select: (location) => (location.search as { view?: unknown }).view === "editor",
   });
+  const isWorkShell = useMatches({
+    select: (matches) => matches.some((match) => SASCODE_WORK_ROUTE_IDS.has(match.routeId)),
+  });
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const resolvedSidebarOpen = isEditorView ? false : sidebarOpen;
+
+  if (isWorkShell) {
+    // A SidebarProvider still wraps the outlet because inherited components
+    // (ChatHeader, the right dock, the global shortcut handler) call
+    // `useSidebar()` and throw without one. No <Sidebar> is rendered, so no
+    // project/session sidebar exists in the work shell.
+    return (
+      <SidebarProvider
+        open={false}
+        onOpenChange={() => {}}
+        className="bg-[var(--sas-canvas)]"
+        data-sidebar-side="left"
+      >
+        <ThreadRetentionMaintenanceToast />
+        <ChatRouteGlobalShortcuts />
+        <Outlet />
+      </SidebarProvider>
+    );
+  }
 
   // The thread sidebar always lives on the left; the right dock is a separate surface.
   const sidebarElement = (

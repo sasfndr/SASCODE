@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Stillspace material language for the SASCODE work shell. */
+@import "./sascode/theme/stillspace.css";
 
 @custom-variant dark (&:is(.dark, .dark *));
 

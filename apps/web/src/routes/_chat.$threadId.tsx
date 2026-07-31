@@ -22,8 +22,7 @@ import { isSplitRoute } from "../splitViewRoute";
 import { selectSplitView, useSplitViewStore } from "../splitViewStore";
 import { useStore } from "../store";
 import { createThreadExistsSelector, createThreadProjectIdSelector } from "../storeSelectors";
-import { SingleChatSurface } from "../components/chat/SingleChatSurface";
-import { SplitChatSurface } from "../components/chat/SplitChatSurface";
+import { SascodeShell } from "../sascode/shell/SascodeShell";
 import { resolveSingleProjectId } from "./-chatThreadRoute.logic";
 
 function ChatThreadRouteView() {
@@ -176,15 +175,21 @@ function ChatThreadRouteView() {
     return null;
   }
 
-  if (splitView && search.splitViewId) {
-    return <SplitChatSurface splitViewId={search.splitViewId} routeThreadId={threadId} />;
-  }
-
-  if (!routeThreadExists) {
+  if (!routeThreadExists && !(splitView && search.splitViewId)) {
     return null;
   }
 
-  return <SingleChatSurface threadId={threadId} search={search} projectId={activeProjectId} />;
+  // The SASCODE shell owns the primary work surface. It mounts the same
+  // SingleChatSurface / SplitChatSurface inside a project space, so every
+  // inherited chat, diff, terminal, Git, and browser capability is preserved —
+  // only the shell around them changed.
+  return (
+    <SascodeShell
+      routeThreadId={threadId}
+      search={search}
+      splitViewId={splitView && search.splitViewId ? search.splitViewId : null}
+    />
+  );
 }
 
 export const Route = createFileRoute("/_chat/$threadId")({

@@ -13,7 +13,7 @@ import {
 
 const event = (
   sequence: number,
-  overrides: Partial<DirectorEvent> = {},
+  overrides: Record<string, unknown> = {},
 ): DirectorEvent =>
   ({
     sequence,
@@ -30,7 +30,7 @@ const event = (
     payload: {},
     metadata: {},
     ...overrides,
-  }) as DirectorEvent;
+  }) as unknown as DirectorEvent;
 
 describe("ingestDirectorEvent", () => {
   it("applies the first contiguous event", () => {
@@ -156,7 +156,7 @@ describe("invalidation scoping", () => {
   it("collapses a burst into one plan", () => {
     const plan = collapseInvalidations([
       event(1),
-      event(2, { projectId: "project-b" } as Partial<DirectorEvent>),
+      event(2, { projectId: "project-b" }),
       event(3, {
         aggregateKind: "attempt",
         aggregateId: "attempt-1",
@@ -165,7 +165,7 @@ describe("invalidation scoping", () => {
       }),
     ]);
     expect(plan.projectIds).toHaveLength(2);
-    expect(plan.workflowIds.sort()).toEqual(["workflow-1", "workflow-2"]);
+    expect([...plan.workflowIds].sort()).toEqual(["workflow-1", "workflow-2"]);
     expect(plan.attention).toBe(true);
     expect(plan.threads).toBe(true);
   });

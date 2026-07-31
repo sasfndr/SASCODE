@@ -1,0 +1,339 @@
+/* FILE: sascode/theme/stillspace.css
+ * Purpose: The Stillspace material language — surfaces, glass, rim light, depth,
+ *          and motion. Every value reads a --sas-* token written by ThemeController.
+ * Layer: Presentation only. No colour literals except pure white/black used as
+ *        alpha carriers, so the whole system moves with the appearance slider.
+ *
+ * Material roles (from the design contract):
+ *   matte   -> a stable place: project environment, session work surface, editor
+ *   glass   -> a movable or temporary object: chat sheet, shelf, module, drawer
+ *   rim     -> the fine inner light that makes glass read as a physical plane
+ *   depth   -> hierarchy, used sparingly and never as decoration
+ */
+
+/* ── Root ────────────────────────────────────────────────────────── */
+
+.sas-root {
+  color: var(--sas-text);
+  background-color: var(--sas-canvas-deep);
+  font-family: var(--font-ui-family);
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The inherited chat/diff/terminal components read the app's semantic tokens.
+ * Re-pointing those tokens inside the SASCODE shell lets every inherited
+ * surface adopt Stillspace materials without forking a single component. */
+.sas-token-bridge {
+  --background: var(--sas-surface);
+  --foreground: var(--sas-text);
+  --card: var(--sas-surface-raised);
+  --card-foreground: var(--sas-text);
+  --popover: var(--sas-surface-raised);
+  --popover-foreground: var(--sas-text);
+  --muted-foreground: var(--sas-text-secondary);
+  --border: var(--sas-line);
+  --input: var(--sas-line-strong);
+  --ring: var(--sas-accent);
+  --color-background-surface: var(--sas-surface);
+  --color-background-panel: var(--sas-surface-raised);
+  --color-background-elevated-primary: var(--sas-surface-raised);
+  --color-text-foreground: var(--sas-text);
+  --color-text-foreground-secondary: var(--sas-text-secondary);
+  --color-text-foreground-tertiary: var(--sas-text-muted);
+  --color-border: var(--sas-line);
+  --color-border-light: var(--sas-line);
+  --color-border-heavy: var(--sas-line-strong);
+  --app-chat-code-surface: var(--sas-code-surface);
+  --app-content-card-radius: var(--sas-radius-lg);
+}
+
+/* ── Materials ───────────────────────────────────────────────────── */
+
+/* A stable work plane. Opaque so long-form reading never fights a backdrop. */
+.sas-matte {
+  background-color: var(--sas-surface);
+  border: 1px solid var(--sas-line);
+  border-radius: var(--sas-radius-lg);
+}
+
+/* Liquid Glass: only for things that float, move, or are temporary.
+ * Glass is never stacked inside glass — a nested panel uses .sas-matte. */
+.sas-glass {
+  position: relative;
+  background-color: var(--sas-glass);
+  border: 1px solid var(--sas-line);
+  border-radius: var(--sas-radius-lg);
+  box-shadow: var(--sas-shadow-float);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  [data-sas-transparency="on"] .sas-glass {
+    -webkit-backdrop-filter: blur(var(--sas-blur)) saturate(148%);
+    backdrop-filter: blur(var(--sas-blur)) saturate(148%);
+  }
+
+  [data-sas-transparency="on"] .sas-glass-quiet {
+    -webkit-backdrop-filter: blur(var(--sas-blur-quiet)) saturate(126%);
+    backdrop-filter: blur(var(--sas-blur-quiet)) saturate(126%);
+  }
+}
+
+/* The one-pixel inner light along the top edge. This is what separates
+ * "translucent rectangle" from "a pane of glass catching the light". */
+.sas-rim::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  /* A 1px border-only gradient: bright along the top edge where light would
+     catch, fading around the sides, faintly returning underneath. */
+  background: linear-gradient(
+    160deg,
+    var(--sas-rim) 0%,
+    color-mix(in srgb, var(--sas-rim) 34%, transparent) 26%,
+    transparent 55%,
+    color-mix(in srgb, var(--sas-rim) 22%, transparent) 100%
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  padding: 1px;
+}
+
+[data-sas-transparency="off"] .sas-rim::before {
+  opacity: 0.45;
+}
+
+/* A quieter glass for secondary floating chrome (shelf, lens, chips). */
+.sas-glass-quiet {
+  background-color: var(--sas-glass-quiet);
+  border: 1px solid var(--sas-line);
+  border-radius: var(--sas-radius-md);
+}
+
+/* Inset well for code, terminals, and readouts. */
+.sas-sunken {
+  background-color: var(--sas-surface-sunken);
+  border: 1px solid var(--sas-line);
+  border-radius: var(--sas-radius-sm);
+}
+
+/* ── Depth ───────────────────────────────────────────────────────── */
+
+.sas-lift {
+  box-shadow: var(--sas-shadow-lift);
+}
+.sas-float {
+  box-shadow: var(--sas-shadow-float);
+}
+
+/* ── Project atmosphere ──────────────────────────────────────────── */
+
+/* The aura is environmental light, not a colour wash: a broad, very low
+ * saturation gradient anchored to the horizon of the space. */
+.sas-aura {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      120% 76% at 50% 108%,
+      var(--sas-aura-soft) 0%,
+      transparent 62%
+    ),
+    radial-gradient(70% 52% at 88% 8%, var(--sas-aura-glow) 0%, transparent 70%);
+  opacity: calc(1 - var(--sas-background-dim) * 0.55);
+}
+
+/* Readability scrim. Only as strong as the background dim asks for, and only
+ * at the very top and bottom where chrome sits — the middle of the space keeps
+ * its atmosphere, because that is the whole point of having one. */
+.sas-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--sas-canvas-deep) calc(var(--sas-background-dim) * 58%), transparent) 0%,
+    transparent 16%,
+    transparent 78%,
+    color-mix(in srgb, var(--sas-canvas-deep) calc(var(--sas-background-dim) * 62%), transparent) 100%
+  );
+}
+
+/* ── Motion ──────────────────────────────────────────────────────── */
+
+.sas-transition {
+  transition-property: transform, opacity, background-color, border-color, box-shadow;
+  transition-duration: var(--sas-duration-base);
+  transition-timing-function: var(--sas-ease-out);
+}
+
+.sas-transition-spatial {
+  transition-property: transform, opacity;
+  transition-duration: var(--sas-duration-spatial);
+  transition-timing-function: var(--sas-ease-spatial);
+}
+
+/* Reduced motion is authoritative: the token already collapses to 0ms, and this
+ * removes any transition the browser would still schedule. */
+@media (prefers-reduced-motion: reduce) {
+  .sas-transition,
+  .sas-transition-spatial {
+    transition-duration: 1ms !important;
+  }
+}
+
+[data-sas-motion="reduced"] .sas-transition,
+[data-sas-motion="reduced"] .sas-transition-spatial {
+  transition-duration: 1ms !important;
+}
+
+/* One soft acknowledgement when fresh state arrives. It runs once and settles —
+ * there are no looping status animations anywhere in this product. */
+@keyframes sas-settle {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.sas-settle {
+  animation: sas-settle var(--sas-duration-base) var(--sas-ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sas-settle {
+    animation: none;
+  }
+}
+
+[data-sas-motion="reduced"] .sas-settle {
+  animation: none;
+}
+
+/* Form controls do not inherit typography by default, which is how a composer
+ * ends up rendering in the monospace fallback while everything around it is
+ * set in the interface face. */
+/* `:where()` keeps specificity at zero so every Tailwind size/weight utility
+ * still wins; only the family, which no utility sets here, is inherited. */
+/* Tailwind preflight already sets `font-family: inherit` on form controls, but
+ * the inherited app also ships rules that push composer-like inputs to the
+ * mono stack. Inside the SASCODE shell the interface face is correct. */
+.sas-root input,
+.sas-root textarea,
+.sas-root select {
+  font-family: var(--font-ui-family);
+}
+
+/* ── Focus ───────────────────────────────────────────────────────── */
+
+.sas-focusable:focus-visible,
+.sas-root :focus-visible {
+  outline: 2px solid var(--sas-accent);
+  outline-offset: 2px;
+  border-radius: var(--sas-radius-xs);
+}
+
+/* ── Embedded chat surface ───────────────────────────────────────── */
+
+/*
+ * The inherited chat surfaces size themselves to the viewport because they were
+ * built as the whole screen. Inside a project space they are one region among
+ * several, so viewport units are remapped to the host's box. Scoped to the
+ * embed host so nothing outside the session surface is affected.
+ */
+[data-sas-session-host] .h-dvh,
+[data-sas-session-host] .h-svh {
+  height: 100%;
+}
+
+[data-sas-session-host] .min-h-dvh,
+[data-sas-session-host] .min-h-svh {
+  min-height: 100%;
+}
+
+/* The inherited card chrome (seam ring, wedge, depth shadow) belongs to the old
+ * sidebar shell. Inside a project space the Stillspace surface owns the edge. */
+[data-sas-session-host] .chat-content-card {
+  border-radius: 0;
+  box-shadow: none;
+  background-color: transparent;
+}
+
+[data-sas-session-host] .chat-content-card::before {
+  display: none;
+}
+
+/* ── Edit Space ──────────────────────────────────────────────────── */
+
+.sas-edit-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--sas-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--sas-line) 1px, transparent 1px);
+  background-size: 2% 4%;
+  opacity: 0.5;
+}
+
+.sas-snap-guide {
+  position: absolute;
+  background-color: var(--sas-accent);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Resize handles only exist while Edit Space is open. */
+.sas-resize-handle {
+  position: absolute;
+  background-color: var(--sas-surface-raised);
+  border: 1px solid var(--sas-accent);
+  border-radius: 2px;
+  width: 9px;
+  height: 9px;
+}
+
+/* ── Utility ─────────────────────────────────────────────────────── */
+
+.sas-hairline {
+  background-color: var(--sas-line);
+}
+
+/* Wide content must scroll inside its own box; the space itself never does. */
+.sas-scroll {
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.sas-numeric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Screen-reader-only text used for state that colour alone would otherwise carry. */
+.sas-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

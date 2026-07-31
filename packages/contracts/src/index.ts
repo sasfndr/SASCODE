@@ -36,3 +36,11 @@ export * from "./studio";
 export * from "./filesystem";
 export * from "./rpc";
 export * from "./sascode";
+
+// `BrowserTabId` is defined twice on purpose: the browser-automation contracts
+// name a live process-level tab, and the SASCODE browser control plane names a
+// durable record. They are different ids for different layers. Star exports
+// cannot disambiguate, so the barrel explicitly re-exports the automation one,
+// which is what every existing consumer of `@synara/contracts` means. SASCODE
+// modules import theirs directly from "./sascode/core".
+export { BrowserTabId } from "./browserAutomationIds";
