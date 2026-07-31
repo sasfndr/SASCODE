@@ -1,5 +1,11 @@
 # Claude Frontend Build Prompt — SASCODE Stillspace
 
+> [!IMPORTANT]
+> The first implementation produced from this prompt was functionally useful
+> but visually rejected. For the current rebuild, use
+> `CLAUDE_FRONTEND_VISUAL_REBUILD_PROMPT.md`. Its visual-fidelity rules override
+> any looser language below.
+
 Copy the prompt below into Claude Code from the SASCODE repository. Use the
 strongest available Claude model for the visual implementation.
 
@@ -78,10 +84,10 @@ Visually inspect every supplied reference image at full resolution:
 /Users/sas/Documents/SASCODE/design-references/ui-states/06-personalize-space-state.png
 ```
 
-The images define atmosphere, hierarchy, spatial interaction, and material
-direction. They are not pixel-perfect final layouts. Improve their spacing,
-readability, information clarity, professional restraint, and production
-states. Do not reproduce any toy-like details.
+The images define binding atmosphere, hierarchy, spatial interaction,
+composition, proportions, and material direction. Reproduce the selected
+reference state closely at its native viewport before extrapolating or
+improving it. Do not treat the references as mood boards.
 
 ## Repository and Git safety
 

@@ -429,9 +429,9 @@ It provides:
 - Temporary context layers.
 - Session shelf.
 
-Do not use the architectural background reference as a literal mandatory wallpaper in every workspace. Translate its qualities—depth, softness, mineral color, indirect light, and calm geometry—into the interface.
+For the canonical Stillspace Dusk preset, use the supplied architectural background as the literal default environment. It is the baseline that supplies depth, softness, mineral color, indirect light, and calm geometry. Do not replace it with procedural gradients during the fidelity rebuild.
 
-Users may later select or generate their own project background.
+Users may later select or generate their own project background, and accessibility settings may replace it with a flat surface.
 
 ### 10.2 Agent chat
 
@@ -883,9 +883,10 @@ Always provide:
 
 ### Treat the references correctly
 
-- Reference images establish the intended visual language and state hierarchy.
-- They are not pixel-perfect final specifications.
-- Improve readability, spacing, and control consistency.
+- During the current visual recovery, the selected reference image is a binding composition target at its native viewport.
+- Match its major anchors, proportions, atmosphere, hierarchy, and material behavior before extrapolating.
+- Do not reinterpret the reference as a mood board or replace source assets with procedural approximations.
+- Readability and accessibility corrections are allowed only when they do not erase the selected composition.
 - Preserve the interaction architecture.
 - Do not simplify the product back into a sidebar.
 
@@ -1007,9 +1008,9 @@ Use for:
 
 #### Raw Dusk background reference
 
-Use this as a source atmosphere and optional temporary prototype background.
+Use this exact image as the default background for the canonical Stillspace Dusk preset and visual acceptance fixtures.
 
-Do not make the product dependent on one static image.
+The product may support custom, generated, reduced, or flat project backgrounds, but those options do not replace the default asset during the fidelity rebuild.
 
 ![Raw Stillspace Dusk background](design-references/branding/04-stillspace-dusk-background.png)
 
