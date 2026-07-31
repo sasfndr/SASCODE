@@ -1,30 +1,12 @@
 import { createHash } from "node:crypto";
 
-import {
-  DirectorCommandReceipt,
-  DirectorEvent,
-  DirectorEventId,
-} from "@synara/contracts";
-import {
-  Effect,
-  Layer,
-  Option,
-  PubSub,
-  Schema,
-  Stream,
-  Struct,
-} from "effect";
+import { DirectorCommandReceipt, DirectorEvent, DirectorEventId } from "@synara/contracts";
+import { Effect, Layer, Option, PubSub, Schema, Stream, Struct } from "effect";
 import * as SqlClient from "effect/unstable/sql/SqlClient";
 import * as SqlSchema from "effect/unstable/sql/SqlSchema";
 
-import {
-  toPersistenceSqlError,
-  toPersistenceSqlOrDecodeError,
-} from "../../persistence/Errors.ts";
-import {
-  DirectorCommandIdentityCollisionError,
-  DirectorEventInvariantError,
-} from "../Errors.ts";
+import { toPersistenceSqlError, toPersistenceSqlOrDecodeError } from "../../persistence/Errors.ts";
+import { DirectorCommandIdentityCollisionError, DirectorEventInvariantError } from "../Errors.ts";
 import {
   DirectorEventStore,
   type DirectorEventStoreShape,
@@ -50,13 +32,8 @@ function canonicalJson(value: unknown): string {
 const fingerprint = (value: unknown): string =>
   createHash("sha256").update(canonicalJson(value)).digest("hex");
 
-const eventIdForCommand = (
-  commandId: string,
-  commandFingerprint: string,
-): DirectorEventId =>
-  DirectorEventId.makeUnsafe(
-    `director-event:${commandId}:${commandFingerprint.slice(0, 16)}`,
-  );
+const eventIdForCommand = (commandId: string, commandFingerprint: string): DirectorEventId =>
+  DirectorEventId.makeUnsafe(`director-event:${commandId}:${commandFingerprint.slice(0, 16)}`);
 
 const DirectorEventDbRow = DirectorEvent.mapFields(
   Struct.assign({
@@ -196,25 +173,19 @@ const makeDirectorEventStore = Effect.gen(function* () {
       ),
     );
 
-  const getHighWaterSequence: DirectorEventStoreShape["getHighWaterSequence"] =
-    sql<{ readonly sequence: number }>`
+  const getHighWaterSequence: DirectorEventStoreShape["getHighWaterSequence"] = sql<{
+    readonly sequence: number;
+  }>`
       SELECT COALESCE(MAX(sequence), 0) AS sequence
       FROM sascode_director_events
     `.pipe(
-      Effect.map((rows) => rows[0]?.sequence ?? 0),
-      Effect.mapError(
-        toPersistenceSqlError(
-          "DirectorEventStore.getHighWaterSequence:query",
-        ),
-      ),
-    );
+    Effect.map((rows) => rows[0]?.sequence ?? 0),
+    Effect.mapError(toPersistenceSqlError("DirectorEventStore.getHighWaterSequence:query")),
+  );
 
-  const subscribeEvents: DirectorEventStoreShape["subscribeEvents"] =
-    PubSub.subscribe(eventPubSub).pipe(
-      Effect.map((subscription) =>
-        Stream.fromEffectRepeat(PubSub.take(subscription)),
-      ),
-    );
+  const subscribeEvents: DirectorEventStoreShape["subscribeEvents"] = PubSub.subscribe(
+    eventPubSub,
+  ).pipe(Effect.map((subscription) => Stream.fromEffectRepeat(PubSub.take(subscription))));
 
   // The SqlSchema read-backs inside commitCommand fail with a raw SchemaError
   // when a stored row no longer matches its schema. commitCommand's error
@@ -226,10 +197,7 @@ const makeDirectorEventStore = Effect.gen(function* () {
     "DirectorEventStore.commitCommand:decode",
   );
 
-  const commitCommand: DirectorEventStoreShape["commitCommand"] = (
-    input,
-    mutation,
-  ) => {
+  const commitCommand: DirectorEventStoreShape["commitCommand"] = (input, mutation) => {
     const commandFingerprint = fingerprint({
       projectId: input.projectId,
       aggregateKind: input.aggregateKind,
@@ -252,8 +220,7 @@ const makeDirectorEventStore = Effect.gen(function* () {
             ) {
               return yield* new DirectorCommandIdentityCollisionError({
                 commandId: input.context.commandId,
-                detail:
-                  "The command ID is already bound to different command content.",
+                detail: "The command ID is already bound to different command content.",
               });
             }
             const event = yield* getEventBySequence({
@@ -275,10 +242,7 @@ const makeDirectorEventStore = Effect.gen(function* () {
             WHERE stream_id = ${input.aggregateId}
           `;
           const streamVersion = versions[0]?.streamVersion ?? 1;
-          const eventId = eventIdForCommand(
-            input.context.commandId,
-            commandFingerprint,
-          );
+          const eventId = eventIdForCommand(input.context.commandId, commandFingerprint);
           const insertedEvents = yield* sql<{ readonly sequence: number }>`
             INSERT INTO sascode_director_events (
               event_id,
@@ -361,17 +325,11 @@ const makeDirectorEventStore = Effect.gen(function* () {
       )
       .pipe(
         Effect.catchTag("SqlError", (error) =>
-          Effect.fail(
-            toPersistenceSqlError("DirectorEventStore.commitCommand:transaction")(
-              error,
-            ),
-          ),
+          Effect.fail(toPersistenceSqlError("DirectorEventStore.commitCommand:transaction")(error)),
         ),
         Effect.tap((outcome) =>
           outcome.kind === "committed"
-            ? Effect.uninterruptible(
-                PubSub.publish(eventPubSub, outcome.event),
-              ).pipe(Effect.asVoid)
+            ? Effect.uninterruptible(PubSub.publish(eventPubSub, outcome.event)).pipe(Effect.asVoid)
             : Effect.void,
         ),
       );
@@ -386,7 +344,4 @@ const makeDirectorEventStore = Effect.gen(function* () {
   } satisfies DirectorEventStoreShape;
 });
 
-export const DirectorEventStoreLive = Layer.effect(
-  DirectorEventStore,
-  makeDirectorEventStore,
-);
+export const DirectorEventStoreLive = Layer.effect(DirectorEventStore, makeDirectorEventStore);

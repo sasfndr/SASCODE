@@ -8,10 +8,7 @@
 // holds. Nothing is illustrative.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type {
-  ProviderCapabilitySnapshot,
-  SascodeProjectSnapshot,
-} from "@synara/contracts";
+import type { ProviderCapabilitySnapshot, SascodeProjectSnapshot } from "@synara/contracts";
 import { IconPlayerPause, IconPlayerPlay, IconRefresh, IconRotate2 } from "@tabler/icons-react";
 
 export interface ModulePanelProps {
@@ -30,9 +27,12 @@ export function NotesModule({ configuration, onConfigure }: ModulePanelProps) {
   const [value, setValue] = useState(configuration["text"] ?? "");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => () => {
-    if (timerRef.current !== null) clearTimeout(timerRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (timerRef.current !== null) clearTimeout(timerRef.current);
+    },
+    [],
+  );
 
   const handleChange = useCallback(
     (next: string) => {
@@ -97,7 +97,11 @@ export function TimerModule({ configuration, onConfigure }: ModulePanelProps) {
           className="sas-transition sas-focusable rounded-full p-1.5"
           style={{ backgroundColor: "var(--sas-accent)", color: "var(--sas-text-on-accent)" }}
         >
-          {running ? <IconPlayerPause size={14} stroke={1.8} /> : <IconPlayerPlay size={14} stroke={1.8} />}
+          {running ? (
+            <IconPlayerPause size={14} stroke={1.8} />
+          ) : (
+            <IconPlayerPlay size={14} stroke={1.8} />
+          )}
         </button>
         <button
           type="button"
@@ -120,7 +124,10 @@ export function TimerModule({ configuration, onConfigure }: ModulePanelProps) {
           }}
           aria-label="Timer length"
           className="sas-focusable rounded-[var(--sas-radius-xs)] px-1.5 py-1 text-[11px] outline-none"
-          style={{ backgroundColor: "var(--sas-surface-sunken)", color: "var(--sas-text-secondary)" }}
+          style={{
+            backgroundColor: "var(--sas-surface-sunken)",
+            color: "var(--sas-text-secondary)",
+          }}
         >
           {[15, 25, 45, 60, 90].map((option) => (
             <option key={option} value={option}>
@@ -268,7 +275,11 @@ export function ProviderUsageModule({
           </p>
           <ul className="space-y-1">
             {failures.map((failure) => (
-              <li key={failure.provider} className="text-[10.5px]" style={{ color: "var(--sas-text-muted)" }}>
+              <li
+                key={failure.provider}
+                className="text-[10.5px]"
+                style={{ color: "var(--sas-text-muted)" }}
+              >
                 <span style={{ color: "var(--sas-text-secondary)" }}>{failure.provider}</span> ·{" "}
                 {failure.detail}
               </li>
@@ -289,11 +300,7 @@ export function ProviderUsageModule({
  * with its required evidence kinds, the active permission boundary, and browser
  * instances holding evidence references.
  */
-export function ContextEvidenceModule({
-  snapshot,
-}: {
-  snapshot: SascodeProjectSnapshot | null;
-}) {
+export function ContextEvidenceModule({ snapshot }: { snapshot: SascodeProjectSnapshot | null }) {
   const workUnits = useMemo(
     () => (snapshot?.workflows ?? []).flatMap((workflow) => workflow.workUnits),
     [snapshot],
@@ -318,7 +325,10 @@ export function ContextEvidenceModule({
                 className="rounded-[var(--sas-radius-sm)] p-2"
                 style={{ backgroundColor: "var(--sas-surface-sunken)" }}
               >
-                <p className="truncate text-[11.5px] font-medium" style={{ color: "var(--sas-text)" }}>
+                <p
+                  className="truncate text-[11.5px] font-medium"
+                  style={{ color: "var(--sas-text)" }}
+                >
                   {unit.title}
                 </p>
                 <p className="text-[10.5px]" style={{ color: "var(--sas-text-muted)" }}>
@@ -369,12 +379,17 @@ export function ContextEvidenceModule({
               <li
                 key={instance.id}
                 className="rounded-[var(--sas-radius-sm)] p-2 text-[10.5px]"
-                style={{ backgroundColor: "var(--sas-surface-sunken)", color: "var(--sas-text-muted)" }}
+                style={{
+                  backgroundColor: "var(--sas-surface-sunken)",
+                  color: "var(--sas-text-muted)",
+                }}
               >
                 <span style={{ color: "var(--sas-text)" }}>{instance.status}</span> ·{" "}
                 {instance.evidenceIds.length} record
                 {instance.evidenceIds.length === 1 ? "" : "s"} ·{" "}
-                {instance.controlOwner.kind === "agent" ? "agent control" : instance.controlOwner.kind}
+                {instance.controlOwner.kind === "agent"
+                  ? "agent control"
+                  : instance.controlOwner.kind}
               </li>
             ))}
           </ul>

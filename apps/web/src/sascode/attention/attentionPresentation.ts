@@ -78,9 +78,7 @@ const CLASS_WEIGHT: Record<AttentionInterruptionClass, number> = {
   system: 3,
 };
 
-function loudestClass(
-  items: ReadonlyArray<AttentionPresentationItem>,
-): AttentionInterruptionClass {
+function loudestClass(items: ReadonlyArray<AttentionPresentationItem>): AttentionInterruptionClass {
   let loudest: AttentionInterruptionClass = "silent";
   for (const entry of items) {
     if (entry.suppressed) continue;
@@ -107,8 +105,7 @@ export function presentProjectAttention(
     failedCount: summary.failedCount,
     activeCount: summary.activeWorkUnitCount,
     // Ambient progress is never "attention" — only a decision or a failure is.
-    wantsAttention:
-      interruption !== "silent" && (actionableCount > 0 || summary.failedCount > 0),
+    wantsAttention: interruption !== "silent" && (actionableCount > 0 || summary.failedCount > 0),
     interruption,
   };
 }
@@ -129,9 +126,9 @@ export function presentWorkspaceAttention(
     byProject.set(project.summary.projectId, presentProjectAttention(project));
   }
 
-  const ranked = [...byProject.values()]
+  const ranked = Array.from(byProject.values())
     .filter((entry) => entry.wantsAttention)
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       const byState = STATE_WEIGHT[b.state] - STATE_WEIGHT[a.state];
       if (byState !== 0) return byState;
       return b.actionableCount - a.actionableCount;
@@ -194,6 +191,6 @@ export function inAppAttentionItems(
   return snapshot.items
     .filter((entry) => !entry.suppressed && !entry.item.resolvedAt)
     .filter((entry) => CLASS_WEIGHT[entry.effectiveInterruptionClass] >= CLASS_WEIGHT["in-app"])
-    .sort((a, b) => STATE_WEIGHT[b.item.state] - STATE_WEIGHT[a.item.state])
+    .toSorted((a, b) => STATE_WEIGHT[b.item.state] - STATE_WEIGHT[a.item.state])
     .slice(0, limit);
 }

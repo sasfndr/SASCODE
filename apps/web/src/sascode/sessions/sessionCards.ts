@@ -266,7 +266,16 @@ function resolveActivity(
   }
 }
 
-function resolveActions(state: SessionCardState, active: boolean): SessionCardAction[] {
+/**
+ * `canSplit` is true when another session already holds the centre, so this one
+ * can join it. Every drag interaction needs a button equivalent — drag-only
+ * would make dual-session unreachable without a pointer.
+ */
+function resolveActions(
+  state: SessionCardState,
+  active: boolean,
+  canSplit: boolean,
+): SessionCardAction[] {
   const actions: SessionCardAction[] = [];
   switch (state) {
     case "needs-approval":
@@ -293,11 +302,14 @@ function resolveActions(state: SessionCardState, active: boolean): SessionCardAc
     default:
       break;
   }
-  actions.push(
-    active
-      ? { kind: "return-to-shelf", label: "Return to shelf", emphasis: "quiet" }
-      : { kind: "focus", label: "Open", emphasis: "quiet" },
-  );
+  if (active) {
+    actions.push({ kind: "return-to-shelf", label: "Return to shelf", emphasis: "quiet" });
+  } else {
+    actions.push({ kind: "focus", label: "Open", emphasis: "quiet" });
+    if (canSplit) {
+      actions.push({ kind: "split", label: "Open beside", emphasis: "quiet" });
+    }
+  }
   return actions;
 }
 
@@ -366,24 +378,21 @@ export function buildSessionCards(input: BuildSessionCardsInput): SessionCard[] 
         workUnitId: join?.workUnit.id ?? null,
         attemptId: join?.attempt.id ?? null,
         attentionFingerprint: join ? (attentionByWorkUnit.get(join.workUnit.id) ?? null) : null,
-        actions: resolveActions(state, active),
+        actions: resolveActions(state, active, input.activeThreadIds.length === 1 && !active),
         active,
       };
     });
 
-  cards.sort((a, b) => {
+  return cards.toSorted((a, b) => {
     if (a.active !== b.active) return a.active ? -1 : 1;
     const byState = STATE_ORDER[a.state] - STATE_ORDER[b.state];
     if (byState !== 0) return byState;
     return Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
   });
-
-  return cards;
 }
 
 /** Count of cards that genuinely need a human, for the collapsed shelf summary. */
 export function countActionableCards(cards: ReadonlyArray<SessionCard>): number {
-  return cards.filter(
-    (card) => card.state === "needs-approval" || card.state === "needs-input",
-  ).length;
+  return cards.filter((card) => card.state === "needs-approval" || card.state === "needs-input")
+    .length;
 }

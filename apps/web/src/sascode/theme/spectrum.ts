@@ -278,9 +278,7 @@ export function resolveTheme(
 
   // `contrast` arrives as a signed nudge (roughly -40..+40 in the UI). High
   // contrast mode pins it to the top so users never have to find the slider.
-  const contrastNudge = overrides.highContrast
-    ? 0.06
-    : clamp(settings.contrast, -40, 40) / 600;
+  const contrastNudge = overrides.highContrast ? 0.06 : clamp(settings.contrast, -40, 40) / 600;
 
   const canvasDeep = blend((a) => a.canvasDeep);
   const canvas = blend((a) => a.canvas);
@@ -434,9 +432,16 @@ export function resolveTheme(
     "--sas-aura-glow": softFill(auraSource, light ? 0.1 : 0.16),
 
     "--sas-code-surface": formatHex(
-      avoidDeadLuminanceBand(blendAt((a) => a.codeSurface, surfaceT), DEAD_BAND_LOW, DEAD_BAND_HIGH),
+      avoidDeadLuminanceBand(
+        blendAt((a) => a.codeSurface, surfaceT),
+        DEAD_BAND_LOW,
+        DEAD_BAND_HIGH,
+      ),
     ),
-    "--sas-scrim": formatRgba(blend((a) => a.scrim), light ? 0.24 : 0.52),
+    "--sas-scrim": formatRgba(
+      blend((a) => a.scrim),
+      light ? 0.24 : 0.52,
+    ),
     "--sas-background-dim": String(round(backgroundDim, 3)),
 
     "--sas-radius-xs": `${round(radiusPx * 0.45, 1)}px`,

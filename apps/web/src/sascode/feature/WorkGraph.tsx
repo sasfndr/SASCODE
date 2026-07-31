@@ -73,7 +73,7 @@ export function WorkGraph({ workflow, execution, onSelectWorkUnit }: WorkGraphPr
   );
 
   const ordered = useMemo(
-    () => [...workflow.workUnits].sort((a, b) => a.sortOrder - b.sortOrder),
+    () => workflow.workUnits.toSorted((a, b) => a.sortOrder - b.sortOrder),
     [workflow.workUnits],
   );
 
@@ -122,11 +122,17 @@ export function WorkGraph({ workflow, execution, onSelectWorkUnit }: WorkGraphPr
                     {STATUS_LABEL[unit.status] ?? unit.status}
                   </span>
                 </div>
-                <p className="mt-0.5 truncate text-[11px]" style={{ color: "var(--sas-text-secondary)" }}>
+                <p
+                  className="mt-0.5 truncate text-[11px]"
+                  style={{ color: "var(--sas-text-secondary)" }}
+                >
                   {unit.outcome}
                 </p>
                 {blockedBy.length > 0 ? (
-                  <p className="mt-0.5 truncate text-[10.5px]" style={{ color: "var(--sas-text-muted)" }}>
+                  <p
+                    className="mt-0.5 truncate text-[10.5px]"
+                    style={{ color: "var(--sas-text-muted)" }}
+                  >
                     After {blockedBy.join(", ")}
                   </p>
                 ) : null}

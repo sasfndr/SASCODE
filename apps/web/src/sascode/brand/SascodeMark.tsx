@@ -41,12 +41,7 @@ export function SascodeSymbol({ className, size = 18 }: MarkProps) {
       />
       {/* Front plane — the active work. The gap between the two long strokes is
           the doorway. */}
-      <path
-        d="M10.6 14.7h6.9"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
+      <path d="M10.6 14.7h6.9" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
     </svg>
   );
 }

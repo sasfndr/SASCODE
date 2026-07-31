@@ -113,7 +113,12 @@ export function AddProjectButton({ variant = "quiet" }: AddProjectButtonProps) {
           className="sas-glass-quiet sas-transition sas-focusable flex h-[min(66vh,520px)] w-[min(18vw,220px)] shrink-0 flex-col items-center justify-center gap-2"
           style={{ borderStyle: "dashed" }}
         >
-          <IconFolderPlus size={20} stroke={1.4} aria-hidden="true" style={{ color: "var(--sas-text-muted)" }} />
+          <IconFolderPlus
+            size={20}
+            stroke={1.4}
+            aria-hidden="true"
+            style={{ color: "var(--sas-text-muted)" }}
+          />
           <span className="text-[12px]" style={{ color: "var(--sas-text-secondary)" }}>
             Add project
           </span>

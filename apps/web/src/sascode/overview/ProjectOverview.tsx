@@ -118,7 +118,12 @@ export function ProjectOverview(props: ProjectOverviewProps) {
             border: "1px solid var(--sas-line)",
           }}
         >
-          <IconSearch size={14} stroke={1.7} aria-hidden="true" style={{ color: "var(--sas-text-muted)" }} />
+          <IconSearch
+            size={14}
+            stroke={1.7}
+            aria-hidden="true"
+            style={{ color: "var(--sas-text-muted)" }}
+          />
           <input
             ref={searchRef}
             value={props.query}

@@ -23,6 +23,9 @@ export interface StillspaceAccessibility {
   highContrast: boolean | null;
 }
 
+/** Anything that is not an explicit boolean means "follow the system". */
+const tri = (value: unknown): boolean | null => (value === true || value === false ? value : null);
+
 const DEFAULT_ACCESSIBILITY: StillspaceAccessibility = {
   reducedMotion: null,
   reducedTransparency: null,
@@ -35,8 +38,6 @@ function readAccessibility(): StillspaceAccessibility {
     const raw = localStorage.getItem(ACCESSIBILITY_STORAGE_KEY);
     if (!raw) return DEFAULT_ACCESSIBILITY;
     const parsed = JSON.parse(raw) as Partial<StillspaceAccessibility>;
-    const tri = (value: unknown): boolean | null =>
-      value === true || value === false ? value : null;
     return {
       reducedMotion: tri(parsed.reducedMotion),
       reducedTransparency: tri(parsed.reducedTransparency),
@@ -95,9 +96,7 @@ function useMediaPreference(query: string): boolean {
       return () => media.removeEventListener("change", listener);
     },
     () =>
-      typeof window !== "undefined" && window.matchMedia
-        ? window.matchMedia(query).matches
-        : false,
+      typeof window !== "undefined" && window.matchMedia ? window.matchMedia(query).matches : false,
     () => false,
   );
 }

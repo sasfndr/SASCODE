@@ -27,7 +27,7 @@ const sascodeApi = () => ensureNativeApi().sascode;
 export const sascodeQueryKeys = {
   all: ["sascode"] as const,
   workspace: (projectIds: ReadonlyArray<ProjectId>) =>
-    ["sascode", "workspace", [...projectIds].sort().join("|")] as const,
+    ["sascode", "workspace", projectIds.toSorted().join("|")] as const,
   workspaceRoot: ["sascode", "workspace"] as const,
   project: (projectId: ProjectId | null) => ["sascode", "project", projectId] as const,
   projectRoot: ["sascode", "project"] as const,

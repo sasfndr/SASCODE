@@ -63,9 +63,7 @@ function inferFamily(
   );
 }
 
-function modelOptionDefaults(
-  model: ProviderModelDescriptor,
-): Readonly<Record<string, string>> {
+function modelOptionDefaults(model: ProviderModelDescriptor): Readonly<Record<string, string>> {
   const options: Record<string, string> = {};
   if (model.defaultReasoningEffort) {
     options.reasoningEffort = model.defaultReasoningEffort;
@@ -100,8 +98,7 @@ function capabilityModel(
       outputModalities: [...input.profile.outputModalities],
       tools: [...input.profile.tools],
       supportsReasoningControl:
-        (model.supportedReasoningEfforts?.length ?? 0) > 0 ||
-        model.supportsThinkingToggle === true,
+        (model.supportedReasoningEfforts?.length ?? 0) > 0 || model.supportsThinkingToggle === true,
       supportsSessionResume: input.profile.supportsSessionResume,
       supportsThreadImport: input.profile.supportsThreadImport,
       supportsStructuredOutput: input.profile.supportsStructuredOutput,

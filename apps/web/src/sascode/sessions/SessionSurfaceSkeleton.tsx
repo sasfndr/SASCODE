@@ -13,12 +13,15 @@ export function SessionSurfaceSkeleton() {
           className="h-3 w-32 rounded-full"
           style={{ backgroundColor: "var(--sas-line-strong)" }}
         />
-        <div className="ms-auto h-3 w-20 rounded-full" style={{ backgroundColor: "var(--sas-line)" }} />
+        <div
+          className="ms-auto h-3 w-20 rounded-full"
+          style={{ backgroundColor: "var(--sas-line)" }}
+        />
       </div>
       <div className="flex-1 space-y-3">
-        {[72, 88, 54, 80, 40].map((width, index) => (
+        {[72, 88, 54, 80, 40].map((width) => (
           <div
-            key={index}
+            key={width}
             className="h-2.5 rounded-full"
             style={{ width: `${width}%`, backgroundColor: "var(--sas-line)" }}
           />

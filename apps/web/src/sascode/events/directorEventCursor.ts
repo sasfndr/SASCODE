@@ -50,9 +50,7 @@ function insertAscending(
   event: DirectorEvent,
 ): ReadonlyArray<DirectorEvent> {
   if (buffered.some((candidate) => candidate.sequence === event.sequence)) return buffered;
-  const next = [...buffered, event];
-  next.sort((a, b) => a.sequence - b.sequence);
-  return next;
+  return [...buffered, event].toSorted((a, b) => a.sequence - b.sequence);
 }
 
 /**
@@ -98,10 +96,7 @@ export function ingestDirectorEvent(
   }
 
   if (event.sequence === state.lastSequence + 1) {
-    const { lastSequence, buffered, drained } = drain(
-      event.sequence,
-      state.buffered,
-    );
+    const { lastSequence, buffered, drained } = drain(event.sequence, state.buffered);
     const applied = [event, ...drained];
     const stillMissing = buffered.length > 0;
     return {
@@ -143,7 +138,7 @@ export function ingestDirectorEvents(
   state: DirectorCursorState,
   events: ReadonlyArray<DirectorEvent>,
 ): DirectorIngestResult {
-  const ordered = [...events].sort((a, b) => a.sequence - b.sequence);
+  const ordered = events.toSorted((a, b) => a.sequence - b.sequence);
   let current = state;
   const applied: DirectorEvent[] = [];
   let duplicate = ordered.length > 0;
@@ -219,9 +214,7 @@ export function directorInvalidationFor(event: DirectorEvent): DirectorInvalidat
 }
 
 /** Collapses a batch into one invalidation plan so a burst causes one refetch. */
-export function collapseInvalidations(
-  events: ReadonlyArray<DirectorEvent>,
-): {
+export function collapseInvalidations(events: ReadonlyArray<DirectorEvent>): {
   projectIds: ReadonlyArray<DirectorEvent["projectId"]>;
   workflowIds: ReadonlyArray<string>;
   attention: boolean;

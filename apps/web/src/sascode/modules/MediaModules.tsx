@@ -62,7 +62,10 @@ export function MusicModule({ visible, configuration, onConfigure }: MediaModule
       // Unmuting only ever happens as a direct result of this press.
       audio.muted = false;
       setMuted(false);
-      void audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+      void audio
+        .play()
+        .then(() => setPlaying(true))
+        .catch(() => setPlaying(false));
     } else {
       audio.pause();
       setPlaying(false);
@@ -73,15 +76,19 @@ export function MusicModule({ visible, configuration, onConfigure }: MediaModule
     return (
       <div className="flex h-full flex-col justify-center gap-3 p-4">
         <div className="flex items-center gap-2">
-          <IconMusic size={15} stroke={1.6} aria-hidden="true" style={{ color: "var(--sas-text-muted)" }} />
+          <IconMusic
+            size={15}
+            stroke={1.6}
+            aria-hidden="true"
+            style={{ color: "var(--sas-text-muted)" }}
+          />
           <p className="text-[12px] font-medium" style={{ color: "var(--sas-text)" }}>
             Music
           </p>
         </div>
         <p className="text-[11.5px] leading-relaxed" style={{ color: "var(--sas-text-secondary)" }}>
-          Point this at an audio stream to play it here. A Spotify connection
-          needs an authenticated provider, which this workspace does not have
-          configured yet.
+          Point this at an audio stream to play it here. A Spotify connection needs an authenticated
+          provider, which this workspace does not have configured yet.
         </p>
         <form
           className="flex gap-1.5"
@@ -161,7 +168,11 @@ export function MusicModule({ visible, configuration, onConfigure }: MediaModule
             <IconPlayerSkipBack size={14} stroke={1.7} />
           </IconButton>
           <IconButton label={playing ? "Pause" : "Play"} onClick={toggle} primary>
-            {playing ? <IconPlayerPause size={14} stroke={1.7} /> : <IconPlayerPlay size={14} stroke={1.7} />}
+            {playing ? (
+              <IconPlayerPause size={14} stroke={1.7} />
+            ) : (
+              <IconPlayerPlay size={14} stroke={1.7} />
+            )}
           </IconButton>
           <IconButton label="Next" onClick={() => undefined}>
             <IconPlayerSkipForward size={14} stroke={1.7} />
@@ -175,7 +186,11 @@ export function MusicModule({ visible, configuration, onConfigure }: MediaModule
               setMuted(audio.muted);
             }}
           >
-            {muted ? <IconVolumeOff size={14} stroke={1.7} /> : <IconVolume size={14} stroke={1.7} />}
+            {muted ? (
+              <IconVolumeOff size={14} stroke={1.7} />
+            ) : (
+              <IconVolume size={14} stroke={1.7} />
+            )}
           </IconButton>
         </div>
       </div>
@@ -214,8 +229,8 @@ export function VideoModule({ visible, configuration, onConfigure }: MediaModule
           Video
         </p>
         <p className="text-[11.5px] leading-relaxed" style={{ color: "var(--sas-text-secondary)" }}>
-          Paste a YouTube link to keep a reference beside the work. It stays
-          paused and muted until you start it.
+          Paste a YouTube link to keep a reference beside the work. It stays paused and muted until
+          you start it.
         </p>
         <form
           className="flex gap-1.5"
@@ -269,7 +284,9 @@ export function VideoModule({ visible, configuration, onConfigure }: MediaModule
         className="size-full border-0"
         allow="picture-in-picture; fullscreen"
         referrerPolicy="strict-origin-when-cross-origin"
-        sandbox="allow-scripts allow-same-origin allow-presentation"
+        // allow-same-origin is deliberately omitted: combined with allow-scripts it
+        // would let the frame remove its own sandbox. YouTube needs neither.
+        sandbox="allow-scripts allow-presentation"
       />
     </div>
   );

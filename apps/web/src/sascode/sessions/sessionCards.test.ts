@@ -19,10 +19,7 @@ import {
 const PROJECT = "project-a" as ProjectId;
 const NOW = Date.parse("2026-07-31T12:00:00.000Z");
 
-const thread = (
-  id: string,
-  overrides: Partial<SidebarThreadSummary> = {},
-): SidebarThreadSummary =>
+const thread = (id: string, overrides: Partial<SidebarThreadSummary> = {}): SidebarThreadSummary =>
   ({
     id: id as ThreadId,
     projectId: PROJECT,
@@ -137,10 +134,7 @@ const snapshot = (workflows: Workflow[]): SascodeProjectSnapshot =>
 describe("indexAttemptsByThread", () => {
   it("joins an attempt to its provider thread", () => {
     const flow = workflow([workUnit("wu-1")]);
-    const index = indexAttemptsByThread(
-      [flow],
-      new Map([["wu-1", [attempt("a-1", "wu-1")]]]),
-    );
+    const index = indexAttemptsByThread([flow], new Map([["wu-1", [attempt("a-1", "wu-1")]]]));
     expect(index.get("t-1" as ThreadId)?.workUnit.id).toBe("wu-1");
   });
 
@@ -257,11 +251,7 @@ describe("buildSessionCards", () => {
         thread("t-4", { hasPendingApprovals: true }),
       ],
     });
-    expect(cards.map((card) => card.state)).toEqual([
-      "needs-approval",
-      "needs-input",
-      "working",
-    ]);
+    expect(cards.map((card) => card.state)).toEqual(["needs-approval", "needs-input", "working"]);
   });
 
   it("floats the active session to the front", () => {
@@ -305,6 +295,22 @@ describe("buildSessionCards", () => {
     const kinds = cards[0]!.actions.map((action) => action.kind);
     expect(kinds).toContain("review");
     expect(kinds).toContain("approve");
+  });
+
+  it("offers a keyboard-reachable split once one session holds the centre", () => {
+    const cards = buildSessionCards({
+      ...baseInput,
+      threads: [thread("t-1"), thread("t-2")],
+      activeThreadIds: ["t-1" as ThreadId],
+    });
+    const inactive = cards.find((card) => card.threadId === "t-2");
+    // Dual-session must be reachable without a pointer, so the drag has a button.
+    expect(inactive?.actions.map((action) => action.kind)).toContain("split");
+  });
+
+  it("does not offer split when nothing is focused yet", () => {
+    const cards = buildSessionCards({ ...baseInput, threads: [thread("t-1")] });
+    expect(cards[0]!.actions.map((action) => action.kind)).not.toContain("split");
   });
 
   it("offers return-to-shelf instead of open for an active session", () => {

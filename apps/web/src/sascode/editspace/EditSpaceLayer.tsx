@@ -7,8 +7,12 @@
 // save loses a race, and leave the workspace in a state with no way back.
 // Hence the explicit conflict choice and the always-present recovery controls.
 
-import { useCallback, useMemo, useState } from "react";
-import type { ProjectId, SascodePermissionCapability, SascodeThemeSettings } from "@synara/contracts";
+import { useCallback, useMemo, useRef, useState } from "react";
+import type {
+  ProjectId,
+  SascodePermissionCapability,
+  SascodeThemeSettings,
+} from "@synara/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -16,10 +20,7 @@ import { AppearanceDrawer } from "./AppearanceDrawer";
 import { ModuleFrame } from "./ModuleFrame";
 import { ModuleLibrary } from "./ModuleLibrary";
 import { ModuleContent } from "../modules/ModuleContent";
-import {
-  MODULE_DEFINITIONS,
-  type SascodeModuleType,
-} from "../modules/moduleRegistry";
+import { MODULE_DEFINITIONS, type SascodeModuleType } from "../modules/moduleRegistry";
 import { bringToFront, findFreePlacement } from "../layout/layoutGeometry";
 import type { ProjectLayoutController } from "../layout/useProjectLayout";
 import { projectSnapshotQueryOptions } from "../queries/sascodeQueries";
@@ -52,13 +53,7 @@ export function EditSpaceLayer(props: EditSpaceLayerProps) {
   const queryClient = useQueryClient();
   const snapshot = useQuery(projectSnapshotQueryOptions(props.projectSnapshotProjectId));
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const canvasRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      canvasElement.current = node;
-    },
-    [],
-  );
-  const canvasElement = useMemo(() => ({ current: null as HTMLDivElement | null }), []);
+  const canvasElement = useRef<HTMLDivElement | null>(null);
 
   const grantedCapabilities = useMemo(() => {
     const granted = new Set<SascodePermissionCapability>();
@@ -75,10 +70,9 @@ export function EditSpaceLayer(props: EditSpaceLayerProps) {
 
   const handleThemeChange = useCallback(
     (patch: Partial<SascodeThemeSettings>, immediate?: boolean) => {
-      controller.update(
-        (current) => ({ ...current, theme: { ...current.theme, ...patch } }),
-        { persist: immediate ? "now" : "idle" },
-      );
+      controller.update((current) => ({ ...current, theme: { ...current.theme, ...patch } }), {
+        persist: immediate ? "now" : "idle",
+      });
     },
     [controller],
   );
@@ -165,15 +159,15 @@ export function EditSpaceLayer(props: EditSpaceLayerProps) {
           className="absolute inset-0 z-30 flex"
           style={{ backgroundColor: "color-mix(in srgb, var(--sas-scrim) 55%, transparent)" }}
         >
-          <div ref={canvasRef} className="relative min-w-0 flex-1">
+          <div ref={canvasElement} className="relative min-w-0 flex-1">
             <div className="sas-edit-grid" aria-hidden="true" />
 
             <p
               className="absolute left-1/2 top-3 -translate-x-1/2 text-[11px]"
               style={{ color: "var(--sas-text-on-canvas-secondary)" }}
             >
-              Drag to move · Drag edges to resize · Arrows move · Shift+arrows resize ·
-              Alt+arrows dock
+              Drag to move · Drag edges to resize · Arrows move · Shift+arrows resize · Alt+arrows
+              dock
             </p>
 
             {layout.modules.map((placement) => (
@@ -253,9 +247,9 @@ export function EditSpaceLayer(props: EditSpaceLayerProps) {
 
           {drawer}
         </div>
-      ) : (
-        drawer ? <div className="absolute inset-y-0 right-0 z-30 flex p-3">{drawer}</div> : null
-      )}
+      ) : drawer ? (
+        <div className="absolute inset-y-0 right-0 z-30 flex p-3">{drawer}</div>
+      ) : null}
 
       {controller.conflict ? (
         <div
@@ -273,9 +267,8 @@ export function EditSpaceLayer(props: EditSpaceLayerProps) {
               className="mt-1.5 text-[12px] leading-relaxed"
               style={{ color: "var(--sas-text-secondary)" }}
             >
-              Another window saved a newer arrangement. Your unsaved changes are still
-              here — choose which one wins. Keeping yours reapplies your geometry on top
-              of the newer revision.
+              Another window saved a newer arrangement. Your unsaved changes are still here — choose
+              which one wins. Keeping yours reapplies your geometry on top of the newer revision.
             </p>
             <div className="mt-4 flex gap-2">
               <button

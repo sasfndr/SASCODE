@@ -161,7 +161,11 @@ export function AgentChatSheet(props: AgentChatSheetProps) {
           className="sas-transition sas-focusable rounded-[var(--sas-radius-xs)] p-1"
           style={{ color: "var(--sas-text-muted)" }}
         >
-          {props.expanded ? <IconMinus size={14} stroke={1.7} /> : <IconMaximize size={14} stroke={1.7} />}
+          {props.expanded ? (
+            <IconMinus size={14} stroke={1.7} />
+          ) : (
+            <IconMaximize size={14} stroke={1.7} />
+          )}
         </button>
       </header>
 
@@ -187,7 +191,8 @@ export function AgentChatSheet(props: AgentChatSheetProps) {
                 style={{
                   backgroundColor:
                     target?.id === entry.id ? "var(--sas-accent-soft)" : "transparent",
-                  color: target?.id === entry.id ? "var(--sas-accent-ink)" : "var(--sas-text-muted)",
+                  color:
+                    target?.id === entry.id ? "var(--sas-accent-ink)" : "var(--sas-text-muted)",
                 }}
               >
                 {entry.label}
@@ -250,7 +255,10 @@ export function AgentChatSheet(props: AgentChatSheetProps) {
                   {card.activity}
                 </p>
                 {thread?.branch ? (
-                  <p className="mt-1 truncate text-[10.5px]" style={{ color: "var(--sas-text-muted)" }}>
+                  <p
+                    className="mt-1 truncate text-[10.5px]"
+                    style={{ color: "var(--sas-text-muted)" }}
+                  >
                     {thread.branch}
                   </p>
                 ) : null}

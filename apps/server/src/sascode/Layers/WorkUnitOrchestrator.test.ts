@@ -48,9 +48,7 @@ const launcherLayer = Layer.succeed(DirectorThreadLauncher, {
       launches.push(input);
       return {
         operationId: `operation:${input.requestId}`,
-        threadId: ThreadId.makeUnsafe(
-          `thread:${input.attemptId}`,
-        ),
+        threadId: ThreadId.makeUnsafe(`thread:${input.attemptId}`),
         worktreePath: `/tmp/sascode/${input.attemptId}`,
         baselineGitRef: input.baseRef,
       };
@@ -64,25 +62,17 @@ const repositories = Layer.mergeAll(
   RoutingRepositoryLive,
 ).pipe(Layer.provideMerge(SqlitePersistenceMemory));
 const directorLayer = DirectorLive.pipe(Layer.provide(repositories));
-const eventLayer = DirectorEventStoreLive.pipe(
-  Layer.provideMerge(SqlitePersistenceMemory),
-);
+const eventLayer = DirectorEventStoreLive.pipe(Layer.provideMerge(SqlitePersistenceMemory));
 const commandLayer = DirectorCommandsLive.pipe(
   Layer.provide(Layer.mergeAll(directorLayer, eventLayer, repositories)),
 );
 const modelRouterLayer = ModelRouterLive.pipe(Layer.provide(repositories));
-const taskContractsLayer = TaskContractsLive.pipe(
-  Layer.provide(repositories),
-);
+const taskContractsLayer = TaskContractsLive.pipe(Layer.provide(repositories));
 const executionCoordinatorLayer = DirectorExecutionCoordinatorLive.pipe(
-  Layer.provide(
-    Layer.mergeAll(directorLayer, repositories, taskContractsLayer),
-  ),
+  Layer.provide(Layer.mergeAll(directorLayer, repositories, taskContractsLayer)),
 );
 const dispatcherLayer = AttemptDispatcherLive.pipe(
-  Layer.provide(
-    Layer.mergeAll(commandLayer, repositories, launcherLayer),
-  ),
+  Layer.provide(Layer.mergeAll(commandLayer, repositories, launcherLayer)),
 );
 const orchestratorLayer = WorkUnitOrchestratorLive.pipe(
   Layer.provide(
@@ -129,9 +119,7 @@ const projectId = ProjectId.makeUnsafe("project-work-unit-orchestrator");
 const workflowId = WorkflowId.makeUnsafe("workflow-work-unit-orchestrator");
 const workUnitId = WorkUnitId.makeUnsafe("work-unit-work-unit-orchestrator");
 const policyId = RoutingPolicyId.makeUnsafe("policy-work-unit-orchestrator");
-const connectionId = ProviderConnectionId.makeUnsafe(
-  "connection-work-unit-orchestrator",
-);
+const connectionId = ProviderConnectionId.makeUnsafe("connection-work-unit-orchestrator");
 
 const connection: ProviderConnection = {
   id: connectionId,
@@ -147,9 +135,7 @@ const connection: ProviderConnection = {
 };
 
 const snapshot: ProviderCapabilitySnapshot = {
-  id: CapabilitySnapshotId.makeUnsafe(
-    "snapshot-work-unit-orchestrator",
-  ),
+  id: CapabilitySnapshotId.makeUnsafe("snapshot-work-unit-orchestrator"),
   connectionId,
   providerKey: "codex",
   providerKind: "codex",
@@ -284,9 +270,7 @@ const spec: WorkUnitExecutionSpec = {
   permissionProfile: "full-access-isolated",
   permissionGrantIds: [],
   expectedArtifacts: ["Backend implementation"],
-  routingConstraints: [
-    { type: "requires-activity", activity: "backend-implementation" },
-  ],
+  routingConstraints: [{ type: "requires-activity", activity: "backend-implementation" }],
   baselineGitRef: "origin/main",
   maxAttempts: 3,
   createdAt: now,
@@ -345,9 +329,7 @@ testLayer("WorkUnitOrchestrator", (it) => {
       assert.strictEqual(launches.length, 1);
 
       const resultPacket = {
-        id: ResultPacketId.makeUnsafe(
-          "result-work-unit-orchestrator",
-        ),
+        id: ResultPacketId.makeUnsafe("result-work-unit-orchestrator"),
         workflowId,
         workUnitId,
         attemptId: scheduled.attempt!.id,
@@ -355,9 +337,7 @@ testLayer("WorkUnitOrchestrator", (it) => {
         taskContractDigest: Option.getOrThrow(contract).digest,
         status: "complete" as const,
         summary: "The backend orchestration loop is complete.",
-        changedResources: [
-          { kind: "directory" as const, uri: "apps/server" },
-        ],
+        changedResources: [{ kind: "directory" as const, uri: "apps/server" }],
         decisionIds: [],
         evidenceIds: [],
         commandsRun: ["focused test"],
@@ -382,9 +362,7 @@ testLayer("WorkUnitOrchestrator", (it) => {
       assert.strictEqual(settled.attempt.status, "succeeded");
       assert.isFalse(settled.replayed);
       assert.strictEqual(
-        (yield* workflows.getById({ workflowId })).pipe(
-          Option.getOrThrow,
-        ).status,
+        (yield* workflows.getById({ workflowId })).pipe(Option.getOrThrow).status,
         "completed",
       );
 

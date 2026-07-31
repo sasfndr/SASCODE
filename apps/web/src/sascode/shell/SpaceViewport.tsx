@@ -8,57 +8,57 @@
 // neighbouring spaces stay mounted as thin edge reveals so the movement has
 // somewhere to go, but they render nothing heavy.
 
-import { forwardRef } from "react";
+import { forwardRef, type ReactNode } from "react";
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 
 export interface SpaceViewportProps {
-  count: number;
+  /**
+   * One entry per project space, identified by the project id. Taking ids
+   * explicitly (rather than reading keys off children) means a reordered
+   * project list can never recycle the wrong space's DOM.
+   */
+  spaces: ReadonlyArray<{ id: string; node: ReactNode }>;
   activeIndex: number;
   onStepProject: (direction: -1 | 1) => void;
-  children: React.ReactNode;
 }
 
-export const SpaceViewport = forwardRef<HTMLDivElement, SpaceViewportProps>(
-  function SpaceViewport({ count, activeIndex, onStepProject, children }, ref) {
-    const canGoBack = activeIndex > 0;
-    const canGoForward = activeIndex < count - 1;
+export const SpaceViewport = forwardRef<HTMLDivElement, SpaceViewportProps>(function SpaceViewport(
+  { spaces, activeIndex, onStepProject },
+  ref,
+) {
+  const count = spaces.length;
+  const canGoBack = activeIndex > 0;
+  const canGoForward = activeIndex < count - 1;
 
-    return (
-      <div ref={ref} className="relative min-h-0 flex-1 overflow-hidden">
-        <div
-          className="sas-transition-spatial flex h-full"
-          style={{
-            width: `${Math.max(count, 1) * 100}%`,
-            transform: `translate3d(-${activeIndex * (100 / Math.max(count, 1))}%, 0, 0)`,
-          }}
-        >
-          {Array.isArray(children)
-            ? children.map((child, index) => (
-                <div
-                  key={index}
-                  className="h-full min-w-0"
-                  style={{ width: `${100 / Math.max(count, 1)}%` }}
-                  aria-hidden={index !== activeIndex}
-                  // Off-screen spaces are inert to pointer and tab order, which
-                  // is what stops a hidden project stealing focus mid-swipe.
-                  inert={index !== activeIndex}
-                >
-                  {child}
-                </div>
-              ))
-            : children}
-        </div>
-
-        {canGoBack ? (
-          <EdgeButton side="left" onClick={() => onStepProject(-1)} />
-        ) : null}
-        {canGoForward ? (
-          <EdgeButton side="right" onClick={() => onStepProject(1)} />
-        ) : null}
+  return (
+    <div ref={ref} className="relative min-h-0 flex-1 overflow-hidden">
+      <div
+        className="sas-transition-spatial flex h-full"
+        style={{
+          width: `${Math.max(count, 1) * 100}%`,
+          transform: `translate3d(-${activeIndex * (100 / Math.max(count, 1))}%, 0, 0)`,
+        }}
+      >
+        {spaces.map((space, index) => (
+          <div
+            key={space.id}
+            className="h-full min-w-0"
+            style={{ width: `${100 / Math.max(count, 1)}%` }}
+            aria-hidden={index !== activeIndex}
+            // Off-screen spaces are inert to pointer and tab order, which is
+            // what stops a hidden project stealing focus mid-swipe.
+            inert={index !== activeIndex}
+          >
+            {space.node}
+          </div>
+        ))}
       </div>
-    );
-  },
-);
+
+      {canGoBack ? <EdgeButton side="left" onClick={() => onStepProject(-1)} /> : null}
+      {canGoForward ? <EdgeButton side="right" onClick={() => onStepProject(1)} /> : null}
+    </div>
+  );
+});
 
 function EdgeButton({ side, onClick }: { side: "left" | "right"; onClick: () => void }) {
   return (

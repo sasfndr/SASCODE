@@ -115,7 +115,7 @@ function SascodeShellInner({ routeThreadId, search, splitViewId }: SascodeShellP
       void navigate({
         to: "/$threadId",
         params: { threadId },
-        search: () => ({ ...(splitViewId ? { splitViewId } : {}) }),
+        search: () => (splitViewId ? { splitViewId } : {}),
       });
     },
     [navigate, splitViewId],
@@ -350,53 +350,54 @@ function SascodeShellInner({ routeThreadId, search, splitViewId }: SascodeShellP
 
       <SpaceViewport
         ref={viewportRef}
-        count={projects.length}
         activeIndex={activeIndex}
         onStepProject={handleStepProject}
-      >
-        {projects.map((project, index) => (
-          <ProjectSpace
-            key={project.id}
-            project={project}
-            active={index === activeIndex}
-            cards={index === activeIndex ? spaceData.cards : []}
-            threadsById={threadsById}
-            activeThreadIds={index === activeIndex ? activeThreadIds : []}
-            focusedSide={ui.focusedSide}
-            splitRatio={ui.splitRatio}
-            onSplitRatioChange={ui.setSplitRatio}
-            chatDock={chatDock}
-            onChatDockChange={(dock) =>
-              layoutController.update(
-                (current) => ({
-                  ...current,
-                  modules: current.modules.map((placement) =>
-                    placement.moduleType === "agent-chat" ? { ...placement, dock } : placement,
-                  ),
-                }),
-                { persist: "idle" },
-              )
-            }
-            chatExpanded={ui.chatExpanded}
-            onChatExpandedChange={ui.setChatExpanded}
-            contextLens={ui.contextLens}
-            onContextLensChange={ui.setContextLens}
-            onSessionAction={handleSessionAction}
-            onFocusSide={ui.setFocusedSide}
-            onStartFeature={(request) => {
-              setStartFeatureRequest(request ?? "");
-              setStartFeatureOpen(true);
-            }}
-            onBootstrapProject={() => void handleBootstrap()}
-            needsBootstrap={layoutController.usingDefault && spaceData.snapshotReady}
-            search={search}
-            splitViewId={splitViewId}
-            editSpaceActive={layout.mode === "edit-space"}
-            flatBackground={theme.opaquePanels}
-            backgroundImageUrl={null}
-          />
-        ))}
-      </SpaceViewport>
+        spaces={projects.map((project, index) => ({
+          id: project.id,
+          node: (
+            <ProjectSpace
+              key={project.id}
+              project={project}
+              active={index === activeIndex}
+              cards={index === activeIndex ? spaceData.cards : []}
+              threadsById={threadsById}
+              activeThreadIds={index === activeIndex ? activeThreadIds : []}
+              focusedSide={ui.focusedSide}
+              splitRatio={ui.splitRatio}
+              onSplitRatioChange={ui.setSplitRatio}
+              chatDock={chatDock}
+              onChatDockChange={(dock) =>
+                layoutController.update(
+                  (current) => ({
+                    ...current,
+                    modules: current.modules.map((placement) =>
+                      placement.moduleType === "agent-chat" ? { ...placement, dock } : placement,
+                    ),
+                  }),
+                  { persist: "idle" },
+                )
+              }
+              chatExpanded={ui.chatExpanded}
+              onChatExpandedChange={ui.setChatExpanded}
+              contextLens={ui.contextLens}
+              onContextLensChange={ui.setContextLens}
+              onSessionAction={handleSessionAction}
+              onFocusSide={ui.setFocusedSide}
+              onStartFeature={(request) => {
+                setStartFeatureRequest(request ?? "");
+                setStartFeatureOpen(true);
+              }}
+              onBootstrapProject={() => void handleBootstrap()}
+              needsBootstrap={layoutController.usingDefault && spaceData.snapshotReady}
+              search={search}
+              splitViewId={splitViewId}
+              editSpaceActive={layout.mode === "edit-space"}
+              flatBackground={theme.opaquePanels}
+              backgroundImageUrl={null}
+            />
+          ),
+        }))}
+      />
 
       {layout.mode === "edit-space" || ui.appearanceOpen ? (
         <EditSpaceLayer

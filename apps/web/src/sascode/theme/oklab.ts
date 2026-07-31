@@ -91,19 +91,13 @@ export function okLabToRgb({ l, a, b }: OkLab): Rgb {
 
   return {
     r: clamp01(
-      linearToSrgb(
-        4.0767416621 * lLinear - 3.3077115913 * mLinear + 0.2309699292 * sLinear,
-      ),
+      linearToSrgb(4.0767416621 * lLinear - 3.3077115913 * mLinear + 0.2309699292 * sLinear),
     ),
     g: clamp01(
-      linearToSrgb(
-        -1.2684380046 * lLinear + 2.6097574011 * mLinear - 0.3413193965 * sLinear,
-      ),
+      linearToSrgb(-1.2684380046 * lLinear + 2.6097574011 * mLinear - 0.3413193965 * sLinear),
     ),
     b: clamp01(
-      linearToSrgb(
-        -0.0041960863 * lLinear - 0.7034186147 * mLinear + 1.707614701 * sLinear,
-      ),
+      linearToSrgb(-0.0041960863 * lLinear - 0.7034186147 * mLinear + 1.707614701 * sLinear),
     ),
   };
 }
@@ -222,11 +216,7 @@ export function ensureContrast(background: Rgb, ink: Rgb, targetRatio: number): 
  * stretch of unreadable mid-grey work surfaces: the atmosphere keeps
  * interpolating smoothly while text-bearing planes step across the band.
  */
-export function avoidDeadLuminanceBand(
-  colour: Rgb,
-  lowEdge: number,
-  highEdge: number,
-): Rgb {
+export function avoidDeadLuminanceBand(colour: Rgb, lowEdge: number, highEdge: number): Rgb {
   const luminance = relativeLuminance(colour);
   if (luminance <= lowEdge || luminance >= highEdge) return colour;
 

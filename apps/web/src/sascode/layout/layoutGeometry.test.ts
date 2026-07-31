@@ -150,9 +150,7 @@ describe("docking", () => {
   });
 
   it("does not preview when the module is nowhere near an edge", () => {
-    expect(
-      resolveDockPreview({ x: DOCK_AFFINITY + 6, y: 40, width: 20, height: 20 }),
-    ).toBeNull();
+    expect(resolveDockPreview({ x: DOCK_AFFINITY + 6, y: 40, width: 20, height: 20 })).toBeNull();
   });
 
   it("resolves a corner to a single edge rather than both", () => {
@@ -216,9 +214,9 @@ describe("keyboard manipulation", () => {
 
   it("resizes within bounds", () => {
     expect(resizeRect({ x: 10, y: 10, width: 20, height: 20 }, "right").width).toBe(22);
-    expect(
-      resizeRect({ x: 10, y: 10, width: MIN_MODULE_WIDTH, height: 20 }, "left").width,
-    ).toBe(MIN_MODULE_WIDTH);
+    expect(resizeRect({ x: 10, y: 10, width: MIN_MODULE_WIDTH, height: 20 }, "left").width).toBe(
+      MIN_MODULE_WIDTH,
+    );
   });
 });
 
@@ -258,7 +256,7 @@ describe("reconcileLayoutConflict", () => {
       revision: 9,
     });
     const { merged, divergentModuleIds } = reconcileLayoutConflict(local, remote);
-    expect(merged.modules.map((entry) => entry.id).sort()).toEqual(["chat", "notes"]);
+    expect(merged.modules.map((entry) => entry.id).toSorted()).toEqual(["chat", "notes"]);
     expect(divergentModuleIds).toContain("notes");
   });
 

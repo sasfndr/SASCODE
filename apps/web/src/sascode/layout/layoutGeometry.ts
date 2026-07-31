@@ -133,8 +133,7 @@ export function resolveDockPreview(rect: Rect): DockPreview | null {
     { dock: "right", distance: 100 - (rect.x + rect.width) },
     { dock: "bottom", distance: 100 - (rect.y + rect.height) },
   ];
-  distances.sort((a, b) => a.distance - b.distance);
-  const nearest = distances[0]!;
+  const nearest = distances.toSorted((a, b) => a.distance - b.distance)[0]!;
   if (nearest.distance > DOCK_AFFINITY) return null;
   return { dock: nearest.dock, rect: DOCK_RECT[nearest.dock] };
 }
@@ -156,14 +155,16 @@ export function bringToFront(
   modules: ReadonlyArray<SascodeWorkspaceModulePlacement>,
   id: string,
 ): ReadonlyArray<SascodeWorkspaceModulePlacement> {
-  const ordered = [...modules].sort((a, b) => a.zIndex - b.zIndex);
+  const ordered = modules.toSorted((a, b) => a.zIndex - b.zIndex);
   const withoutTarget = ordered.filter((placement) => placement.id !== id);
   const target = ordered.find((placement) => placement.id === id);
   if (!target) return modules;
-  return [...withoutTarget, target].map((placement, index) => ({
-    ...placement,
-    zIndex: index + 1,
-  }));
+  const ordering = [...withoutTarget, target];
+  const renumbered: SascodeWorkspaceModulePlacement[] = [];
+  for (const [index, placement] of ordering.entries()) {
+    renumbered.push({ ...placement, zIndex: index + 1 });
+  }
+  return renumbered;
 }
 
 // ── Collision-safe placement ─────────────────────────────────────────

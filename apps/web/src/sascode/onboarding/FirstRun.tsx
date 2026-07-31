@@ -22,7 +22,7 @@ export function FirstRun() {
 
   const providers = useMemo(() => {
     const snapshots = capabilities.data ?? [];
-    return [...snapshots].sort((a, b) => a.displayName.localeCompare(b.displayName));
+    return snapshots.toSorted((a, b) => a.displayName.localeCompare(b.displayName));
   }, [capabilities.data]);
 
   const readyCount = providers.filter((snapshot) => READY_HEALTH.has(snapshot.health)).length;
@@ -45,7 +45,10 @@ export function FirstRun() {
           <SascodeSymbol size={26} className="text-[var(--sas-text-on-canvas)]" />
           <div>
             <SascodeWordmark className="text-[var(--sas-text-on-canvas)]" />
-            <p className="mt-0.5 text-[12px]" style={{ color: "var(--sas-text-on-canvas-secondary)" }}>
+            <p
+              className="mt-0.5 text-[12px]"
+              style={{ color: "var(--sas-text-on-canvas-secondary)" }}
+            >
               A place to build.
             </p>
           </div>
@@ -59,9 +62,8 @@ export function FirstRun() {
             className="mt-1.5 text-[12.5px] leading-relaxed"
             style={{ color: "var(--sas-text-secondary)" }}
           >
-            A project becomes its own workspace — its own atmosphere, sessions,
-            and layout. You move between projects sideways, the way you move
-            between desks.
+            A project becomes its own workspace — its own atmosphere, sessions, and layout. You move
+            between projects sideways, the way you move between desks.
           </p>
 
           <div className="mt-4">
@@ -131,12 +133,15 @@ export function FirstRun() {
               className="mt-[1px] shrink-0"
               style={{ color: "var(--sas-text-muted)" }}
             />
-            <p className="text-[11.5px] leading-relaxed" style={{ color: "var(--sas-text-secondary)" }}>
+            <p
+              className="text-[11.5px] leading-relaxed"
+              style={{ color: "var(--sas-text-secondary)" }}
+            >
               New projects start on{" "}
               <span style={{ color: "var(--sas-text)" }}>full access, isolated</span>: agents get
               every capability, but only inside an isolated worktree under this project&apos;s
-              boundary. Denied resources, step-up requirements, and spend limits still apply — it
-              is not a global bypass. You can change this per project or per piece of work.
+              boundary. Denied resources, step-up requirements, and spend limits still apply — it is
+              not a global bypass. You can change this per project or per piece of work.
             </p>
           </div>
         </div>

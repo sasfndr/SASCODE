@@ -11,10 +11,7 @@ import {
   DirectorEntityNotFoundError,
   type DirectorThreadLaunchError,
 } from "../Errors.ts";
-import {
-  AttemptDispatcher,
-  type AttemptDispatcherShape,
-} from "../Services/AttemptDispatcher.ts";
+import { AttemptDispatcher, type AttemptDispatcherShape } from "../Services/AttemptDispatcher.ts";
 import { ContextEvidenceRepository } from "../Services/ContextEvidenceRepository.ts";
 import { DirectorCommands } from "../Services/DirectorCommands.ts";
 import { DirectorThreadLauncher } from "../Services/DirectorThreadLauncher.ts";
@@ -26,9 +23,7 @@ const commandContext = (
   operation: string,
   occurredAt: string,
 ) => ({
-  commandId: DirectorCommandId.makeUnsafe(
-    `director:${attemptId}:${operation}`,
-  ),
+  commandId: DirectorCommandId.makeUnsafe(`director:${attemptId}:${operation}`),
   actorKind: "system" as const,
   actorId: "sascode-director",
   occurredAt,
@@ -41,9 +36,7 @@ const renderResources = (
 ): string =>
   resources.length === 0
     ? "- None declared."
-    : resources
-        .map((resource) => `- ${resource.kind}: ${resource.uri}`)
-        .join("\n");
+    : resources.map((resource) => `- ${resource.kind}: ${resource.uri}`).join("\n");
 
 const buildTaskPrompt = (
   attemptId: WorkUnitAttempt["id"],
@@ -125,8 +118,7 @@ const makeAttemptDispatcher = Effect.gen(function* () {
   const dispatch: AttemptDispatcherShape["dispatch"] = (input) =>
     Effect.gen(function* () {
       let attempt = yield* requireAttempt(input.attemptId);
-      const recovered =
-        attempt.status === "dispatching" || attempt.threadId != null;
+      const recovered = attempt.status === "dispatching" || attempt.threadId != null;
 
       if (
         (attempt.status === "queued" || attempt.status === "running") &&
@@ -137,8 +129,7 @@ const makeAttemptDispatcher = Effect.gen(function* () {
       if (attempt.status !== "preparing" && attempt.status !== "dispatching") {
         return yield* new DirectorDispatchInvariantError({
           attemptId: attempt.id,
-          detail:
-            `Expected preparing or dispatching state, got ${attempt.status}.`,
+          detail: `Expected preparing or dispatching state, got ${attempt.status}.`,
         });
       }
 
@@ -187,23 +178,16 @@ const makeAttemptDispatcher = Effect.gen(function* () {
       if (decision.selected.providerKind == null) {
         return yield* new DirectorDispatchInvariantError({
           attemptId: attempt.id,
-          detail:
-            `Provider ${decision.selected.providerKey} has no Synara runtime adapter.`,
+          detail: `Provider ${decision.selected.providerKey} has no Synara runtime adapter.`,
         });
       }
 
       if (attempt.status === "preparing") {
-        attempt = (
-          yield* commands.advanceAttempt({
-            context: commandContext(
-              attempt.id,
-              "mark-dispatching",
-              input.occurredAt,
-            ),
-            attemptId: attempt.id,
-            nextStatus: "dispatching",
-          })
-        ).current;
+        attempt = (yield* commands.advanceAttempt({
+          context: commandContext(attempt.id, "mark-dispatching", input.occurredAt),
+          attemptId: attempt.id,
+          nextStatus: "dispatching",
+        })).current;
       }
 
       if (attempt.threadId == null) {
@@ -213,11 +197,7 @@ const makeAttemptDispatcher = Effect.gen(function* () {
             attemptId: attempt.id,
             projectId: workflow.projectId,
             title: `${workflow.title} · ${contract.outcome}`,
-            prompt: buildTaskPrompt(
-              attempt.id,
-              contract,
-              decision.selected,
-            ),
+            prompt: buildTaskPrompt(attempt.id, contract, decision.selected),
             target: decision.selected,
             environment: "worktree",
             baseRef: contract.baselineGitRef ?? null,
@@ -228,61 +208,39 @@ const makeAttemptDispatcher = Effect.gen(function* () {
                 : "approval-required",
           })
           .pipe(
-            Effect.catchTag(
-              "DirectorThreadLaunchError",
-              (error: DirectorThreadLaunchError) =>
-                error.operationMayHaveCommitted
-                  ? Effect.fail(error)
-                  : commands
-                      .advanceAttempt({
-                        context: commandContext(
-                          attempt.id,
-                          "mark-dispatch-failed",
-                          input.occurredAt,
-                        ),
-                        attemptId: attempt.id,
-                        nextStatus: "failed",
-                        error: error.detail,
-                      })
-                      // Record the failed attempt, then surface the original
-                      // launch error rather than the compensation's result.
-                      .pipe(Effect.flatMap(() => Effect.fail(error))),
+            Effect.catchTag("DirectorThreadLaunchError", (error: DirectorThreadLaunchError) =>
+              error.operationMayHaveCommitted
+                ? Effect.fail(error)
+                : commands
+                    .advanceAttempt({
+                      context: commandContext(attempt.id, "mark-dispatch-failed", input.occurredAt),
+                      attemptId: attempt.id,
+                      nextStatus: "failed",
+                      error: error.detail,
+                    })
+                    // Record the failed attempt, then surface the original
+                    // launch error rather than the compensation's result.
+                    .pipe(Effect.flatMap(() => Effect.fail(error))),
             ),
           );
-        attempt = (
-          yield* commands.attachThread({
-            context: commandContext(
-              attempt.id,
-              "attach-thread",
-              input.occurredAt,
-            ),
-            attemptId: attempt.id,
-            threadId: launch.threadId,
-            worktreePath: launch.worktreePath,
-            baselineGitRef:
-              launch.baselineGitRef ?? contract.baselineGitRef ?? null,
-          })
-        ).current;
+        attempt = (yield* commands.attachThread({
+          context: commandContext(attempt.id, "attach-thread", input.occurredAt),
+          attemptId: attempt.id,
+          threadId: launch.threadId,
+          worktreePath: launch.worktreePath,
+          baselineGitRef: launch.baselineGitRef ?? contract.baselineGitRef ?? null,
+        })).current;
       }
 
-      attempt = (
-        yield* commands.advanceAttempt({
-          context: commandContext(
-            attempt.id,
-            "mark-queued",
-            input.occurredAt,
-          ),
-          attemptId: attempt.id,
-          nextStatus: "queued",
-        })
-      ).current;
+      attempt = (yield* commands.advanceAttempt({
+        context: commandContext(attempt.id, "mark-queued", input.occurredAt),
+        attemptId: attempt.id,
+        nextStatus: "queued",
+      })).current;
       return { attempt, recovered };
     });
 
   return { dispatch } satisfies AttemptDispatcherShape;
 });
 
-export const AttemptDispatcherLive = Layer.effect(
-  AttemptDispatcher,
-  makeAttemptDispatcher,
-);
+export const AttemptDispatcherLive = Layer.effect(AttemptDispatcher, makeAttemptDispatcher);

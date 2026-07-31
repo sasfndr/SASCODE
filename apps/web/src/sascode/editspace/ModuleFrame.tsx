@@ -272,7 +272,5 @@ export function rectFromPixels(
   pixels: { x: number; y: number; width: number; height: number },
   container: DOMRect,
 ): Rect {
-  return clampRect(
-    toPercent(pixels, { width: container.width, height: container.height }),
-  );
+  return clampRect(toPercent(pixels, { width: container.width, height: container.height }));
 }

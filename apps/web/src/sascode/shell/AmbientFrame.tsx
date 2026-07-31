@@ -42,11 +42,7 @@ export interface AmbientFrameProps {
   onFocusAttention: (projectId: ProjectId) => void;
 }
 
-function ConnectionDot({
-  connection,
-}: {
-  connection: AmbientFrameProps["connection"];
-}) {
+function ConnectionDot({ connection }: { connection: AmbientFrameProps["connection"] }) {
   const { label, tone } = connection.error
     ? { label: "Reconnecting", tone: "var(--sas-blocked)" }
     : connection.repairing
@@ -80,11 +76,7 @@ function SpacePosition({
 }: Pick<AmbientFrameProps, "projects" | "activeIndex" | "attention" | "onSelectProject">) {
   if (projects.length <= 1) return null;
   return (
-    <div
-      className="flex items-center gap-[7px]"
-      role="tablist"
-      aria-label="Project spaces"
-    >
+    <div className="flex items-center gap-[7px]" role="tablist" aria-label="Project spaces">
       {projects.map((project, index) => {
         const presentation = attention.byProject.get(project.id);
         const active = index === activeIndex;
@@ -189,7 +181,8 @@ export function AmbientFrame(props: AmbientFrameProps) {
             }}
             className="sas-transition sas-focusable flex items-center gap-1.5 rounded-full px-2.5 py-1"
             style={{
-              backgroundColor: failures > 0 ? "var(--sas-blocked-soft)" : "var(--sas-attention-soft)",
+              backgroundColor:
+                failures > 0 ? "var(--sas-blocked-soft)" : "var(--sas-attention-soft)",
               color: failures > 0 ? "var(--sas-blocked-ink)" : "var(--sas-attention-ink)",
             }}
           >

@@ -7,11 +7,7 @@
 // composer uses, so a message sent from the cross-session sheet is
 // indistinguishable from one typed into the session's own composer.
 
-import type {
-  ModelSelection,
-  ProviderApprovalDecision,
-  ThreadId,
-} from "@synara/contracts";
+import type { ModelSelection, ProviderApprovalDecision, ThreadId } from "@synara/contracts";
 
 import { ensureNativeApi } from "~/nativeApi";
 import { newCommandId, newMessageId } from "~/lib/utils";

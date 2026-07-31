@@ -100,7 +100,9 @@ function ChatIndexRouteView() {
   // project bootstrap, and the empty-project state reachable instead of being
   // skipped past by an auto-created thread.
   if (threadIds.length === 0) {
-    return <SascodeShell routeThreadId={null} search={EMPTY_DIFF_ROUTE_SEARCH} splitViewId={null} />;
+    return (
+      <SascodeShell routeThreadId={null} search={EMPTY_DIFF_ROUTE_SEARCH} splitViewId={null} />
+    );
   }
 
   return (

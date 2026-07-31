@@ -99,10 +99,7 @@ export function useProjectLayout(projectId: ProjectId | null): ProjectLayoutCont
 
   const durable = query.data ?? null;
 
-  const fallback = useMemo(
-    () => (projectId ? buildDefaultLayout(projectId) : null),
-    [projectId],
-  );
+  const fallback = useMemo(() => (projectId ? buildDefaultLayout(projectId) : null), [projectId]);
 
   const layout = draft ?? durable ?? fallback ?? buildDefaultLayout("unknown" as ProjectId);
 
@@ -225,10 +222,9 @@ export function useProjectLayout(projectId: ProjectId | null): ProjectLayoutCont
   }, [durable, fallback, persist, projectId]);
 
   const recoverModules = useCallback(() => {
-    update(
-      (current) => ({ ...current, modules: [...recoverOffScreenModules(current.modules)] }),
-      { persist: "now" },
-    );
+    update((current) => ({ ...current, modules: [...recoverOffScreenModules(current.modules)] }), {
+      persist: "now",
+    });
   }, [update]);
 
   const keepLocalEdits = useCallback(() => {
@@ -279,8 +275,11 @@ export function withActiveThreads(
   return {
     ...layout,
     activeThreadIds: [...activeThreadIds].slice(0, 2),
-    mode: activeThreadIds.length > 1 ? "dual-session" : layout.mode === "dual-session"
-      ? "focus"
-      : layout.mode,
+    mode:
+      activeThreadIds.length > 1
+        ? "dual-session"
+        : layout.mode === "dual-session"
+          ? "focus"
+          : layout.mode,
   };
 }

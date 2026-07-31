@@ -20,10 +20,7 @@ let lastWritten: string | null = null;
  * Writes are deduplicated because this runs on every navigation, and the
  * underlying store serialises the whole sidebar UI state each time.
  */
-export function rememberSascodeThreadRoute(
-  threadId: ThreadId,
-  splitViewId: string | null,
-): void {
+export function rememberSascodeThreadRoute(threadId: ThreadId, splitViewId: string | null): void {
   const signature = `${threadId}:${splitViewId ?? ""}`;
   if (signature === lastWritten) return;
   lastWritten = signature;

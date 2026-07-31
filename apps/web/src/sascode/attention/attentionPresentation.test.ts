@@ -14,9 +14,7 @@ import {
 
 const PROJECT = "project-a" as ProjectId;
 
-const item = (
-  overrides: Record<string, unknown> = {},
-): AttentionPresentationItem =>
+const item = (overrides: Record<string, unknown> = {}): AttentionPresentationItem =>
   ({
     item: {
       fingerprint: "fp-1",

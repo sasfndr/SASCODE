@@ -58,9 +58,7 @@ const clamp01 = (value: number): number =>
 const targetKey = (target: ResolvedModelTarget): string =>
   `${target.connectionId}\u0000${target.modelSlug}`;
 
-const healthAvailability = (
-  snapshot: ProviderCapabilitySnapshot,
-): number => {
+const healthAvailability = (snapshot: ProviderCapabilitySnapshot): number => {
   switch (snapshot.health) {
     case "ready":
       return 1;
@@ -75,13 +73,8 @@ const healthAvailability = (
   }
 };
 
-const isExpired = (
-  snapshot: ProviderCapabilitySnapshot,
-  now: string | undefined,
-): boolean =>
-  now !== undefined &&
-  snapshot.expiresAt != null &&
-  snapshot.expiresAt <= now;
+const isExpired = (snapshot: ProviderCapabilitySnapshot, now: string | undefined): boolean =>
+  now !== undefined && snapshot.expiresAt != null && snapshot.expiresAt <= now;
 
 function requiredTools(
   role: AgentRoleDefinition,
@@ -151,14 +144,10 @@ function constraintRejections(input: {
         break;
       case "max-usage-fraction": {
         const exceedsLimit = input.snapshot.quota.some(
-          (window) =>
-            window.usedFraction !== undefined &&
-            window.usedFraction > constraint.value,
+          (window) => window.usedFraction !== undefined && window.usedFraction > constraint.value,
         );
         if (exceedsLimit) {
-          rejected.push(
-            `Provider usage exceeds the configured ${constraint.value} fraction.`,
-          );
+          rejected.push(`Provider usage exceeds the configured ${constraint.value} fraction.`);
         }
         break;
       }

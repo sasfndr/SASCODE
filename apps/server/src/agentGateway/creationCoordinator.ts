@@ -346,11 +346,8 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
           ? yield* requireThreadShell(context.callerThreadId)
           : null;
       const internalCallerThreadId =
-        context.kind === "internal-director"
-          ? `sascode-director:${context.directorId}`
-          : null;
-      const internalCallerTurnId =
-        context.kind === "internal-director" ? input.requestId : null;
+        context.kind === "internal-director" ? `sascode-director:${context.directorId}` : null;
+      const internalCallerTurnId = context.kind === "internal-director" ? input.requestId : null;
       const operationId = `gateway:create:${stableGatewayDigest({
         principalKind: context.kind,
         principalId,
@@ -413,44 +410,43 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
                 markDispatching: operationRepository.markDispatching,
                 recordWorktreeCreated: operationRepository.recordWorktreeCreated,
                 markCompensating: operationRepository.markCompensating,
-                recordCompensationFailure:
-                  operationRepository.recordCompensationFailure,
+                recordCompensationFailure: operationRepository.recordCompensationFailure,
                 complete: operationRepository.complete,
                 fail: operationRepository.fail,
                 registerTask: () => Effect.void,
                 markTaskStatus: () => Effect.void,
               }
             : {
-              getExisting: () =>
-                externalOperationRepository!.getOperationByRequest({
-                  integrationId: context.integrationId,
-                  requestId: input.requestId,
-                }),
-              getById: externalOperationRepository!.getOperationById,
-              reserve: (reservation) =>
-                externalOperationRepository!.reserveOperation({
-                  ...reservation,
-                  integrationId: context.integrationId,
-                  requestedCount: 1,
-                }),
-              markDispatching: externalOperationRepository!.markOperationDispatching,
-              recordWorktreeCreated: externalOperationRepository!.recordOperationWorktreeCreated,
-              markCompensating: externalOperationRepository!.markOperationCompensating,
-              recordCompensationFailure:
-                externalOperationRepository!.recordOperationCompensationFailure,
-              complete: externalOperationRepository!.completeOperation,
-              fail: externalOperationRepository!.failOperation,
-              registerTask: (task) =>
-                externalOperationRepository!.registerTask({
-                  ...task,
-                  integrationId: context.integrationId,
-                }),
-              markTaskStatus: (operationId, status) =>
-                externalOperationRepository!.markTaskStatus({
-                  operationId,
-                  status,
-                  now: gatewayIsoNow(),
-                }),
+                getExisting: () =>
+                  externalOperationRepository!.getOperationByRequest({
+                    integrationId: context.integrationId,
+                    requestId: input.requestId,
+                  }),
+                getById: externalOperationRepository!.getOperationById,
+                reserve: (reservation) =>
+                  externalOperationRepository!.reserveOperation({
+                    ...reservation,
+                    integrationId: context.integrationId,
+                    requestedCount: 1,
+                  }),
+                markDispatching: externalOperationRepository!.markOperationDispatching,
+                recordWorktreeCreated: externalOperationRepository!.recordOperationWorktreeCreated,
+                markCompensating: externalOperationRepository!.markOperationCompensating,
+                recordCompensationFailure:
+                  externalOperationRepository!.recordOperationCompensationFailure,
+                complete: externalOperationRepository!.completeOperation,
+                fail: externalOperationRepository!.failOperation,
+                registerTask: (task) =>
+                  externalOperationRepository!.registerTask({
+                    ...task,
+                    integrationId: context.integrationId,
+                  }),
+                markTaskStatus: (operationId, status) =>
+                  externalOperationRepository!.markTaskStatus({
+                    operationId,
+                    status,
+                    now: gatewayIsoNow(),
+                  }),
               };
       const existingOperation = yield* operationStore
         .getExisting()
@@ -519,16 +515,11 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
         Effect.gen(function* () {
           if (context.kind !== "provider-session" && spec.projectId === undefined) {
             return yield* Effect.fail(
-              new ToolInputError(
-                "Non-provider task creation requires an explicit projectId.",
-              ),
+              new ToolInputError("Non-provider task creation requires an explicit projectId."),
             );
           }
           const projectId = ProjectId.makeUnsafe(spec.projectId ?? caller!.projectId);
-          if (
-            context.kind !== "provider-session" &&
-            !context.allowedProjectIds.has(projectId)
-          ) {
+          if (context.kind !== "provider-session" && !context.allowedProjectIds.has(projectId)) {
             return yield* Effect.fail(
               new GatewayToolError(
                 "capability_denied",

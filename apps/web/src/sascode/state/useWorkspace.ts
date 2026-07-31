@@ -78,10 +78,7 @@ export function useProjectSpaceData(
   const projection = useAttemptProjection();
   const snapshot = useQuery(projectSnapshotQueryOptions(projectId));
 
-  const attemptsByWorkUnit = useMemo(
-    () => attemptsByWorkUnitForCards(projection),
-    [projection],
-  );
+  const attemptsByWorkUnit = useMemo(() => attemptsByWorkUnitForCards(projection), [projection]);
 
   const cards = useMemo(() => {
     if (!projectId) return [];

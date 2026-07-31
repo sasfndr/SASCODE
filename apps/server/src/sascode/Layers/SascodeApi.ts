@@ -45,16 +45,10 @@ const makeSascodeApi = Effect.gen(function* () {
   const resultIngestion = yield* ResultIngestion;
   const providerCatalog = yield* ProviderCatalogSync;
 
-  const getWorkspaceSnapshot: SascodeApiShape["getWorkspaceSnapshot"] = (
-    input,
-  ) =>
-    Effect.all(
-      [
-        attention.getWorkspaceSnapshot(input),
-        routing.listCurrentCapabilitySnapshots(),
-      ],
-      { concurrency: "unbounded" },
-    ).pipe(
+  const getWorkspaceSnapshot: SascodeApiShape["getWorkspaceSnapshot"] = (input) =>
+    Effect.all([attention.getWorkspaceSnapshot(input), routing.listCurrentCapabilitySnapshots()], {
+      concurrency: "unbounded",
+    }).pipe(
       Effect.map(([attentionSnapshot, providerCapabilities]) => ({
         attention: attentionSnapshot,
         providerCapabilities,
@@ -102,22 +96,17 @@ const makeSascodeApi = Effect.gen(function* () {
     );
 
   const getWorkflow: SascodeApiShape["getWorkflow"] = (input) =>
-    workflows
-      .getById(input)
-      .pipe(Effect.map(Option.getOrNull));
+    workflows.getById(input).pipe(Effect.map(Option.getOrNull));
 
-  const listProviderCapabilities: SascodeApiShape["listProviderCapabilities"] =
-    () => routing.listCurrentCapabilitySnapshots();
+  const listProviderCapabilities: SascodeApiShape["listProviderCapabilities"] = () =>
+    routing.listCurrentCapabilitySnapshots();
 
-  const refreshProviderCapabilities: SascodeApiShape["refreshProviderCapabilities"] =
-    (input) => providerCatalog.refresh(input);
+  const refreshProviderCapabilities: SascodeApiShape["refreshProviderCapabilities"] = (input) =>
+    providerCatalog.refresh(input);
 
-  const listEvents: SascodeApiShape["listEvents"] = (input) =>
-    events.listEvents(input);
+  const listEvents: SascodeApiShape["listEvents"] = (input) => events.listEvents(input);
 
-  const executeDirectorCommand: SascodeApiShape["executeDirectorCommand"] = (
-    command,
-  ) => {
+  const executeDirectorCommand: SascodeApiShape["executeDirectorCommand"] = (command) => {
     switch (command.type) {
       case "workflow.propose":
         return commands.proposeWorkflow(command).pipe(
@@ -201,8 +190,7 @@ const makeSascodeApi = Effect.gen(function* () {
     }
   };
 
-  const dispatchAttempt: SascodeApiShape["dispatchAttempt"] = (input) =>
-    attempts.dispatch(input);
+  const dispatchAttempt: SascodeApiShape["dispatchAttempt"] = (input) => attempts.dispatch(input);
 
   const scheduleWorkUnit: SascodeApiShape["scheduleWorkUnit"] = (input) =>
     orchestrator.schedule({
@@ -210,8 +198,7 @@ const makeSascodeApi = Effect.gen(function* () {
       actorId: "session-owner",
     });
 
-  const runWorkflow: SascodeApiShape["runWorkflow"] = (input) =>
-    orchestrator.runWorkflow(input);
+  const runWorkflow: SascodeApiShape["runWorkflow"] = (input) => orchestrator.runWorkflow(input);
 
   const submitResult: SascodeApiShape["submitResult"] = (input) =>
     resultIngestion.submit({
@@ -234,9 +221,7 @@ const makeSascodeApi = Effect.gen(function* () {
             limit: 500,
             projectId: input.projectId ?? null,
           });
-          const bounded = page.filter(
-            (event) => event.sequence <= highWater,
-          );
+          const bounded = page.filter((event) => event.sequence <= highWater);
           replay.push(...bounded);
           const nextCursor = bounded.at(-1)?.sequence ?? highWater;
           if (nextCursor <= cursor || page.length === 0) break;
@@ -246,48 +231,38 @@ const makeSascodeApi = Effect.gen(function* () {
           Stream.filter(
             (event) =>
               event.sequence > highWater &&
-              (input.projectId == null ||
-                event.projectId === input.projectId),
+              (input.projectId == null || event.projectId === input.projectId),
           ),
         );
         return Stream.concat(Stream.fromIterable(replay), filteredLive);
       }),
     );
 
-  const publishRoutingPolicy: SascodeApiShape["publishRoutingPolicy"] = (
-    input,
-  ) => routing.publishPolicy(input);
+  const publishRoutingPolicy: SascodeApiShape["publishRoutingPolicy"] = (input) =>
+    routing.publishPolicy(input);
 
-  const upsertContextArtifact: SascodeApiShape["upsertContextArtifact"] = (
-    input,
-  ) => context.upsertContextArtifact(input);
+  const upsertContextArtifact: SascodeApiShape["upsertContextArtifact"] = (input) =>
+    context.upsertContextArtifact(input);
 
-  const savePermissionGrant: SascodeApiShape["savePermissionGrant"] = (
-    input,
-  ) => capabilities.saveGrant(input);
+  const savePermissionGrant: SascodeApiShape["savePermissionGrant"] = (input) =>
+    capabilities.saveGrant(input);
 
-  const saveBrowserProfile: SascodeApiShape["saveBrowserProfile"] = (
-    input,
-  ) => browserWorkspace.saveProfile(input);
+  const saveBrowserProfile: SascodeApiShape["saveBrowserProfile"] = (input) =>
+    browserWorkspace.saveProfile(input);
 
-  const createBrowserInstance: SascodeApiShape["createBrowserInstance"] = (
-    input,
-  ) => browserWorkspace.createInstance(input);
+  const createBrowserInstance: SascodeApiShape["createBrowserInstance"] = (input) =>
+    browserWorkspace.createInstance(input);
 
-  const acquireBrowserControl: SascodeApiShape["acquireBrowserControl"] = (
-    input,
-  ) => browserWorkspace.acquireControl(input);
+  const acquireBrowserControl: SascodeApiShape["acquireBrowserControl"] = (input) =>
+    browserWorkspace.acquireControl(input);
 
-  const releaseBrowserControl: SascodeApiShape["releaseBrowserControl"] = (
-    input,
-  ) => browserWorkspace.releaseControl(input);
+  const releaseBrowserControl: SascodeApiShape["releaseBrowserControl"] = (input) =>
+    browserWorkspace.releaseControl(input);
 
-  const updateBrowserInstance: SascodeApiShape["updateBrowserInstance"] = (
-    input,
-  ) => browserWorkspace.updateInstance(input);
+  const updateBrowserInstance: SascodeApiShape["updateBrowserInstance"] = (input) =>
+    browserWorkspace.updateInstance(input);
 
-  const installModule: SascodeApiShape["installModule"] = (input) =>
-    moduleRuntime.install(input);
+  const installModule: SascodeApiShape["installModule"] = (input) => moduleRuntime.install(input);
 
   const instantiateModule: SascodeApiShape["instantiateModule"] = (input) =>
     moduleRuntime.instantiate(input);
@@ -295,9 +270,8 @@ const makeSascodeApi = Effect.gen(function* () {
   const activateModule: SascodeApiShape["activateModule"] = (input) =>
     moduleRuntime.activate(input);
 
-  const updateModuleInstance: SascodeApiShape["updateModuleInstance"] = (
-    input,
-  ) => moduleRuntime.update(input);
+  const updateModuleInstance: SascodeApiShape["updateModuleInstance"] = (input) =>
+    moduleRuntime.update(input);
 
   const bootstrapProject: SascodeApiShape["bootstrapProject"] = (input) =>
     Effect.gen(function* () {
@@ -306,10 +280,7 @@ const makeSascodeApi = Effect.gen(function* () {
         projectId: input.projectId,
       });
       const [policyCreated, permissionGrantCreated] = yield* Effect.all(
-        [
-          routing.publishPolicy(defaults.policy),
-          capabilities.saveGrant(defaults.permissionGrant),
-        ],
+        [routing.publishPolicy(defaults.policy), capabilities.saveGrant(defaults.permissionGrant)],
         { concurrency: "unbounded" },
       );
       yield* Effect.forEach(
@@ -370,55 +341,53 @@ const makeSascodeApi = Effect.gen(function* () {
       });
       let current = proposed.current;
       if (current.status === "proposed") {
-        current = (
-          yield* commands.moveWorkflow({
-            context: {
-              commandId: DirectorCommandId.makeUnsafe(
-                `sascode:${input.projectId}:${input.requestId}:approve`,
-              ),
-              actorKind: "human",
-              actorId: "session-owner",
-              occurredAt: input.occurredAt,
-              correlationId: `sascode-feature:${input.requestId}`,
-              causationEventId: null,
-            },
-            workflowId: current.id,
-            nextStatus: "awaiting-approval",
-          })
-        ).current;
+        current = (yield* commands.moveWorkflow({
+          context: {
+            commandId: DirectorCommandId.makeUnsafe(
+              `sascode:${input.projectId}:${input.requestId}:approve`,
+            ),
+            actorKind: "human",
+            actorId: "session-owner",
+            occurredAt: input.occurredAt,
+            correlationId: `sascode-feature:${input.requestId}`,
+            causationEventId: null,
+          },
+          workflowId: current.id,
+          nextStatus: "awaiting-approval",
+        })).current;
       }
       if (current.status === "awaiting-approval") {
-        current = (
-          yield* commands.moveWorkflow({
-            context: {
-              commandId: DirectorCommandId.makeUnsafe(
-                `sascode:${input.projectId}:${input.requestId}:queue`,
-              ),
-              actorKind: "human",
-              actorId: "session-owner",
-              occurredAt: input.occurredAt,
-              correlationId: `sascode-feature:${input.requestId}`,
-              causationEventId: null,
-            },
-            workflowId: current.id,
-            nextStatus: "queued",
-          })
-        ).current;
+        current = (yield* commands.moveWorkflow({
+          context: {
+            commandId: DirectorCommandId.makeUnsafe(
+              `sascode:${input.projectId}:${input.requestId}:queue`,
+            ),
+            actorKind: "human",
+            actorId: "session-owner",
+            occurredAt: input.occurredAt,
+            correlationId: `sascode-feature:${input.requestId}`,
+            causationEventId: null,
+          },
+          workflowId: current.id,
+          nextStatus: "queued",
+        })).current;
       }
 
       const results = yield* Effect.forEach(
         plan.executionSpecs,
         (spec) =>
-          orchestrator.schedule({
-            spec,
-            occurredAt: input.occurredAt,
-            actorId: "session-owner",
-          }).pipe(
-            Effect.map((result) => ({
-              workUnitId: spec.workUnitId,
-              result,
-            })),
-          ),
+          orchestrator
+            .schedule({
+              spec,
+              occurredAt: input.occurredAt,
+              actorId: "session-owner",
+            })
+            .pipe(
+              Effect.map((result) => ({
+                workUnitId: spec.workUnitId,
+                result,
+              })),
+            ),
         { concurrency: 1 },
       );
       const workflow = Option.getOrElse(
@@ -430,18 +399,11 @@ const makeSascodeApi = Effect.gen(function* () {
         executionSpecs: [...plan.executionSpecs],
         execution: {
           scanned: results.length,
-          scheduled: results.filter(
-            ({ result }) => result.disposition === "scheduled",
-          ).length,
-          active: results.filter(
-            ({ result }) => result.disposition === "already-active",
-          ).length,
-          exhausted: results.filter(
-            ({ result }) => result.disposition === "retry-exhausted",
-          ).length,
-          deferred: results.filter(
-            ({ result }) => result.disposition === "not-ready",
-          ).length,
+          scheduled: results.filter(({ result }) => result.disposition === "scheduled").length,
+          active: results.filter(({ result }) => result.disposition === "already-active").length,
+          exhausted: results.filter(({ result }) => result.disposition === "retry-exhausted")
+            .length,
+          deferred: results.filter(({ result }) => result.disposition === "not-ready").length,
           results,
         },
         replayed: proposed.replayed,
@@ -454,13 +416,11 @@ const makeSascodeApi = Effect.gen(function* () {
   const saveWorkspaceLayout: SascodeApiShape["saveWorkspaceLayout"] = (input) =>
     layouts.saveLayout(input);
 
-  const saveAttentionPreference: SascodeApiShape["saveAttentionPreference"] = (
-    input,
-  ) => attentionRepository.savePreference(input);
+  const saveAttentionPreference: SascodeApiShape["saveAttentionPreference"] = (input) =>
+    attentionRepository.savePreference(input);
 
-  const resolveAttentionItem: SascodeApiShape["resolveAttentionItem"] = (
-    input,
-  ) => attentionRepository.resolveItem(input);
+  const resolveAttentionItem: SascodeApiShape["resolveAttentionItem"] = (input) =>
+    attentionRepository.resolveItem(input);
 
   return {
     getWorkspaceSnapshot,
@@ -496,7 +456,4 @@ const makeSascodeApi = Effect.gen(function* () {
   } satisfies SascodeApiShape;
 });
 
-export const SascodeApiLive = Layer.effect(
-  SascodeApi,
-  makeSascodeApi,
-);
+export const SascodeApiLive = Layer.effect(SascodeApi, makeSascodeApi);

@@ -159,7 +159,11 @@ export function feedSpatialGesture(
 
   if (sample.consumedByContent) {
     // The run belongs to the content under the pointer for its whole duration.
-    return { state: settle(state, "yielded", sample.timestamp), commit: null, preventDefault: false };
+    return {
+      state: settle(state, "yielded", sample.timestamp),
+      commit: null,
+      preventDefault: false,
+    };
   }
 
   const base = continuing ? state : initialSpatialGestureState;
@@ -201,7 +205,11 @@ export function feedSpatialGesture(
 
   if (verticalDominant) {
     if (!config.overviewGestureEnabled) {
-      return { state: settle(next, "yielded", sample.timestamp), commit: null, preventDefault: false };
+      return {
+        state: settle(next, "yielded", sample.timestamp),
+        commit: null,
+        preventDefault: false,
+      };
     }
     if (absY >= config.commitDistanceY * distanceFactor) {
       // Swiping up (content moving away) pulls the camera back to Overview;
@@ -221,7 +229,11 @@ export function feedSpatialGesture(
           preventDefault: true,
         };
       }
-      return { state: settle(next, "yielded", sample.timestamp), commit: null, preventDefault: false };
+      return {
+        state: settle(next, "yielded", sample.timestamp),
+        commit: null,
+        preventDefault: false,
+      };
     }
     return { state: next, commit: null, preventDefault: true };
   }

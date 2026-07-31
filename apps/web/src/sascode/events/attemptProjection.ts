@@ -73,11 +73,15 @@ function rebuildIndexes(byAttemptId: Map<string, AttemptRecord>): AttemptProject
     }
   }
 
-  for (const group of byWorkUnitId.values()) {
-    group.sort((a, b) => a.attemptNumber - b.attemptNumber);
+  const sortedByWorkUnitId = new Map<string, ReadonlyArray<AttemptRecord>>();
+  for (const [workUnitId, group] of byWorkUnitId) {
+    sortedByWorkUnitId.set(
+      workUnitId,
+      group.toSorted((a, b) => a.attemptNumber - b.attemptNumber),
+    );
   }
 
-  return { byAttemptId, byWorkUnitId, byThreadId };
+  return { byAttemptId, byWorkUnitId: sortedByWorkUnitId, byThreadId };
 }
 
 /**
@@ -102,8 +106,7 @@ export function applyAttemptEvent(
     attemptId,
     workflowId,
     workUnitId,
-    attemptNumber:
-      readNumber(event.payload, "attemptNumber") ?? previous?.attemptNumber ?? 1,
+    attemptNumber: readNumber(event.payload, "attemptNumber") ?? previous?.attemptNumber ?? 1,
     status:
       (readString(event.payload, "nextStatus") as WorkUnitAttempt["status"] | null) ??
       previous?.status ??
@@ -111,8 +114,7 @@ export function applyAttemptEvent(
     threadId:
       (readString(event.payload, "threadId") as ThreadId | null) ?? previous?.threadId ?? null,
     worktreePath: readString(event.payload, "worktreePath") ?? previous?.worktreePath ?? null,
-    baselineGitRef:
-      readString(event.payload, "baselineGitRef") ?? previous?.baselineGitRef ?? null,
+    baselineGitRef: readString(event.payload, "baselineGitRef") ?? previous?.baselineGitRef ?? null,
     error:
       event.type === "attempt.dispatch-failed"
         ? (readString(event.payload, "error") ?? "Dispatch failed")

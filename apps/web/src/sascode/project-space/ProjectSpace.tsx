@@ -7,7 +7,7 @@
 // as a temporary lens or a placed module. The default state is quiet.
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import type { ProjectId, ThreadId } from "@synara/contracts";
+import type { ThreadId } from "@synara/contracts";
 
 import type { DiffRouteSearch } from "~/diffRouteSearch";
 import type { Project, SidebarThreadSummary } from "~/types";
@@ -137,24 +137,25 @@ export function ProjectSpace(props: ProjectSpaceProps) {
     [primaryThreadId, props],
   );
 
-  const chatSheet = primaryThreadId || props.cards.length > 0 || props.needsBootstrap === false ? (
-    <AgentChatSheet
-      dock={props.chatDock}
-      onDockChange={props.onChatDockChange}
-      targets={chatTargets}
-      selectedTargetId={chatTargetId}
-      onSelectTarget={setChatTargetId}
-      cards={props.cards}
-      threadsById={props.threadsById}
-      expanded={props.chatExpanded}
-      onExpandedChange={props.onChatExpandedChange}
-      onOpenSession={(threadId) => {
-        const card = props.cards.find((entry) => entry.threadId === threadId);
-        if (card) props.onSessionAction("focus", card);
-      }}
-      onStartFeature={(request) => props.onStartFeature(request)}
-    />
-  ) : null;
+  const chatSheet =
+    primaryThreadId || props.cards.length > 0 || props.needsBootstrap === false ? (
+      <AgentChatSheet
+        dock={props.chatDock}
+        onDockChange={props.onChatDockChange}
+        targets={chatTargets}
+        selectedTargetId={chatTargetId}
+        onSelectTarget={setChatTargetId}
+        cards={props.cards}
+        threadsById={props.threadsById}
+        expanded={props.chatExpanded}
+        onExpandedChange={props.onChatExpandedChange}
+        onOpenSession={(threadId) => {
+          const card = props.cards.find((entry) => entry.threadId === threadId);
+          if (card) props.onSessionAction("focus", card);
+        }}
+        onStartFeature={(request) => props.onStartFeature(request)}
+      />
+    ) : null;
 
   const stage = (
     <div
@@ -263,13 +264,15 @@ export function ProjectSpace(props: ProjectSpaceProps) {
                   />
                 )}
 
-                {/* Lens tabs float over the stage, top-right, the way the
-                    reference places them. */}
-                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-end p-2.5">
+                {/* The lens is an edge rail, not a header bar. Sitting on the
+                    right edge keeps it clear of the session's own header and
+                    composer, which both run full width. */}
+                <div className="pointer-events-none absolute inset-y-0 right-0 z-20 flex items-center pe-2">
                   <ContextLensRail
                     threadId={primaryThreadId}
                     active={props.contextLens}
                     onSelect={props.onContextLensChange}
+                    orientation="vertical"
                   />
                 </div>
 
@@ -297,9 +300,13 @@ export function ProjectSpace(props: ProjectSpaceProps) {
             )}
           </div>
 
+          {/* Floating chat is anchored to the stage, not the viewport, so an
+              expanding shelf can never end up underneath it. */}
           {props.chatDock === "floating" && chatSheet ? (
-            <div className="absolute bottom-28 left-7 z-20 h-[min(54%,440px)] w-[clamp(268px,27%,384px)]">
-              {chatSheet}
+            <div className="pointer-events-none absolute inset-0 z-20 p-6 pb-[calc(var(--sas-space-6)*3)]">
+              <div className="pointer-events-auto h-[min(62%,440px)] w-[clamp(268px,27%,384px)]">
+                {chatSheet}
+              </div>
             </div>
           ) : null}
         </div>

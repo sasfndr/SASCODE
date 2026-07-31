@@ -96,10 +96,7 @@ export function SessionShelf({
               className="size-[6px] shrink-0 rounded-full"
               style={{ backgroundColor: TONE_DOT[SESSION_STATE_TONE[activeCard.state]] }}
             />
-            <span
-              className="truncate text-[12px] font-medium"
-              style={{ color: "var(--sas-text)" }}
-            >
+            <span className="truncate text-[12px] font-medium" style={{ color: "var(--sas-text)" }}>
               {activeCard.title}
             </span>
             <span className="shrink-0 text-[11px]" style={{ color: "var(--sas-text-muted)" }}>
@@ -133,7 +130,9 @@ export function SessionShelf({
                 color: "var(--sas-attention-ink)",
               }}
             >
-              {actionable.length === 1 ? "1 decision ready" : `${actionable.length} decisions ready`}
+              {actionable.length === 1
+                ? "1 decision ready"
+                : `${actionable.length} decisions ready`}
             </span>
           ) : null}
           <button
@@ -168,7 +167,7 @@ export function SessionShelf({
 
       <div
         id={panelId}
-        className="sas-transition grid"
+        className="sas-transition grid min-h-0"
         style={{
           gridTemplateRows: isOpen ? "1fr" : "0fr",
           opacity: isOpen ? 1 : 0,
@@ -198,9 +197,7 @@ export function SessionShelf({
 
       {/* Screen readers get the state changes without a visual notification feed. */}
       <p aria-live="polite" className="sas-sr-only">
-        {actionable
-          .map((card) => `${card.title}: ${SESSION_STATE_LABEL[card.state]}`)
-          .join(". ")}
+        {actionable.map((card) => `${card.title}: ${SESSION_STATE_LABEL[card.state]}`).join(". ")}
       </p>
     </section>
   );

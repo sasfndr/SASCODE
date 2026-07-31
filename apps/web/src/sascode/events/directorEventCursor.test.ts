@@ -11,10 +11,7 @@ import {
   resetDirectorCursor,
 } from "./directorEventCursor";
 
-const event = (
-  sequence: number,
-  overrides: Record<string, unknown> = {},
-): DirectorEvent =>
+const event = (sequence: number, overrides: Record<string, unknown> = {}): DirectorEvent =>
   ({
     sequence,
     id: `evt-${sequence}`,
@@ -165,7 +162,7 @@ describe("invalidation scoping", () => {
       }),
     ]);
     expect(plan.projectIds).toHaveLength(2);
-    expect([...plan.workflowIds].sort()).toEqual(["workflow-1", "workflow-2"]);
+    expect(plan.workflowIds.toSorted()).toEqual(["workflow-1", "workflow-2"]);
     expect(plan.attention).toBe(true);
     expect(plan.threads).toBe(true);
   });

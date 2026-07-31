@@ -32,8 +32,7 @@ export function describeRpcError(error: unknown, fallback: string): string {
 
   if (error && typeof error === "object") {
     const shape = error as WireErrorShape;
-    const direct =
-      readString(shape.message) ?? readString(shape.detail) ?? readString(shape.code);
+    const direct = readString(shape.message) ?? readString(shape.detail) ?? readString(shape.code);
     if (direct) {
       const code = readString(shape.code);
       // A bare code is unhelpful on its own but useful appended to a message.

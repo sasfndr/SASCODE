@@ -20,7 +20,12 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { moduleDefinition, type SascodeModuleType } from "./moduleRegistry";
-import { ContextEvidenceModule, NotesModule, ProviderUsageModule, TimerModule } from "./WorkspaceModules";
+import {
+  ContextEvidenceModule,
+  NotesModule,
+  ProviderUsageModule,
+  TimerModule,
+} from "./WorkspaceModules";
 
 const MusicModule = lazy(async () => ({
   default: (await import("./MediaModules")).MusicModule,
@@ -36,12 +41,7 @@ export interface ModuleContentProps {
   onConfigure: (patch: Record<string, string>) => void;
 }
 
-export function ModuleContent({
-  placement,
-  visible,
-  projectId,
-  onConfigure,
-}: ModuleContentProps) {
+export function ModuleContent({ placement, visible, projectId, onConfigure }: ModuleContentProps) {
   const type = placement.moduleType as SascodeModuleType;
   const definition = moduleDefinition(type);
   const configuration = useMemo(
@@ -129,8 +129,8 @@ function CoreModuleNotice({ title }: { title: string }) {
   return (
     <div className="flex h-full items-center justify-center p-4 text-center">
       <p className="text-[11.5px] leading-relaxed" style={{ color: "var(--sas-text-secondary)" }}>
-        {title} is placed by the workspace. Move and resize it here; it renders
-        live once you leave Edit Space.
+        {title} is placed by the workspace. Move and resize it here; it renders live once you leave
+        Edit Space.
       </p>
     </div>
   );
@@ -140,8 +140,8 @@ function InheritedPanelNotice({ title }: { title: string }) {
   return (
     <div className="flex h-full items-center justify-center p-4 text-center">
       <p className="text-[11.5px] leading-relaxed" style={{ color: "var(--sas-text-secondary)" }}>
-        {title} opens inside the active session, where it has that session&apos;s
-        working directory, branch, and permissions. Use the context lens to show it.
+        {title} opens inside the active session, where it has that session&apos;s working directory,
+        branch, and permissions. Use the context lens to show it.
       </p>
     </div>
   );

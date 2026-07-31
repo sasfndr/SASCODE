@@ -117,7 +117,7 @@ export const SessionCardView = memo(function SessionCardView({
       data-session-card={card.threadId}
       className={cn(
         "sas-transition sas-glass-quiet sas-focusable group relative flex min-w-0 flex-col gap-2 p-3 text-left",
-        variant === "shelf" ? "w-[268px] shrink-0" : "w-full",
+        variant === "shelf" ? "w-[300px] shrink-0" : "w-full",
         dragging && "opacity-60",
       )}
       style={{
@@ -140,25 +140,29 @@ export const SessionCardView = memo(function SessionCardView({
         ) : null}
 
         <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-baseline gap-1.5">
+          <div className="flex min-w-0 items-start gap-2">
             <span
-              className="truncate text-[12.5px] font-medium"
+              className="min-w-0 flex-1 truncate text-[12.5px] font-medium"
               style={{ color: "var(--sas-text)" }}
+              title={card.title}
             >
               {card.title}
             </span>
-            <span className="shrink-0 text-[11px]" style={{ color: "var(--sas-text-muted)" }}>
-              · {card.modelLabel}
-            </span>
+            <StatusChip card={card} />
           </div>
-          {card.roleLabel ? (
-            <div className="text-[10.5px]" style={{ color: "var(--sas-text-muted)" }}>
-              {card.roleLabel}
-            </div>
-          ) : null}
+          <div
+            className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[10.5px]"
+            style={{ color: "var(--sas-text-muted)" }}
+          >
+            <span className="truncate">{card.modelLabel}</span>
+            {card.roleLabel ? (
+              <>
+                <span aria-hidden="true">·</span>
+                <span className="truncate">{card.roleLabel}</span>
+              </>
+            ) : null}
+          </div>
         </div>
-
-        <StatusChip card={card} />
       </div>
 
       <p

@@ -242,9 +242,13 @@ export function AppearanceDrawer(props: AppearanceDrawerProps) {
               className="sas-transition sas-focusable rounded-[var(--sas-radius-xs)] px-2 py-1.5 text-[11px] capitalize"
               style={{
                 backgroundColor:
-                  props.layout.layoutMode === mode ? "var(--sas-accent-soft)" : "var(--sas-surface-sunken)",
+                  props.layout.layoutMode === mode
+                    ? "var(--sas-accent-soft)"
+                    : "var(--sas-surface-sunken)",
                 color:
-                  props.layout.layoutMode === mode ? "var(--sas-accent-ink)" : "var(--sas-text-secondary)",
+                  props.layout.layoutMode === mode
+                    ? "var(--sas-accent-ink)"
+                    : "var(--sas-text-secondary)",
               }}
             >
               {mode}
@@ -264,9 +268,13 @@ export function AppearanceDrawer(props: AppearanceDrawerProps) {
               className="sas-transition sas-focusable rounded-[var(--sas-radius-xs)] px-2 py-1.5 text-[11px] capitalize"
               style={{
                 backgroundColor:
-                  props.layout.presetKey === preset ? "var(--sas-accent-soft)" : "var(--sas-surface-sunken)",
+                  props.layout.presetKey === preset
+                    ? "var(--sas-accent-soft)"
+                    : "var(--sas-surface-sunken)",
                 color:
-                  props.layout.presetKey === preset ? "var(--sas-accent-ink)" : "var(--sas-text-secondary)",
+                  props.layout.presetKey === preset
+                    ? "var(--sas-accent-ink)"
+                    : "var(--sas-text-secondary)",
               }}
             >
               {preset.replace("-", " ")}
@@ -320,7 +328,10 @@ export function AppearanceDrawer(props: AppearanceDrawerProps) {
 
       {/* Recovery is always reachable: customisation must never be able to make
           the workspace unusable without a way back. */}
-      <section className="mt-auto space-y-2 pt-2" style={{ borderTop: "1px solid var(--sas-line)" }}>
+      <section
+        className="mt-auto space-y-2 pt-2"
+        style={{ borderTop: "1px solid var(--sas-line)" }}
+      >
         <div className="flex gap-1.5">
           <SecondaryButton onClick={props.onRecoverModules}>Recover modules</SecondaryButton>
           <SecondaryButton onClick={props.onReset}>
@@ -507,8 +518,7 @@ function TriToggle({
             onClick={() => onChange(option.value)}
             className="sas-transition sas-focusable rounded-full px-2 py-[2px] text-[10px]"
             style={{
-              backgroundColor:
-                value === option.value ? "var(--sas-surface-raised)" : "transparent",
+              backgroundColor: value === option.value ? "var(--sas-surface-raised)" : "transparent",
               color: value === option.value ? "var(--sas-text)" : "var(--sas-text-muted)",
             }}
           >
