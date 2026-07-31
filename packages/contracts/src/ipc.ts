@@ -207,6 +207,7 @@ import type {
   StatsGetProfileTokenStatsResult,
 } from "./stats";
 import type { BrowserAnnotationMethods } from "./browserAnnotations";
+import type { SascodeClientApi } from "./sascode";
 
 export interface ContextMenuItem<T extends string = string> {
   id: T;
@@ -744,6 +745,7 @@ export interface NativeApi {
     onShellEvent: (callback: (event: OrchestrationShellStreamItem) => void) => () => void;
     onThreadEvent: (callback: (event: OrchestrationThreadStreamItem) => void) => () => void;
   };
+  sascode: SascodeClientApi;
   automation: {
     list: (input?: AutomationListInput) => Promise<AutomationListResult>;
     getMemory: (input: AutomationGetMemoryInput) => Promise<AutomationMemory | null>;

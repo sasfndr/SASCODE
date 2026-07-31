@@ -1,6 +1,11 @@
 import * as Crypto from "node:crypto";
 
-import { ORCHESTRATION_WS_METHODS, WS_METHODS, WsRpcError } from "@synara/contracts";
+import {
+  ORCHESTRATION_WS_METHODS,
+  SASCODE_WS_METHODS,
+  WS_METHODS,
+  WsRpcError,
+} from "@synara/contracts";
 import { Effect, Ref } from "effect";
 
 export type WsRequestClass = "control" | "standard" | "expensive-read";
@@ -14,6 +19,29 @@ export const WS_REQUEST_CLASS_LIMITS: Readonly<Record<WsRequestClass, number>> =
 const CONTROL_METHODS = new Set<string>([
   ORCHESTRATION_WS_METHODS.dispatchCommand,
   ORCHESTRATION_WS_METHODS.reconcileProviderDelivery,
+  SASCODE_WS_METHODS.executeDirectorCommand,
+  SASCODE_WS_METHODS.refreshProviderCapabilities,
+  SASCODE_WS_METHODS.scheduleWorkUnit,
+  SASCODE_WS_METHODS.runWorkflow,
+  SASCODE_WS_METHODS.submitResult,
+  SASCODE_WS_METHODS.dispatchAttempt,
+  SASCODE_WS_METHODS.publishRoutingPolicy,
+  SASCODE_WS_METHODS.upsertContextArtifact,
+  SASCODE_WS_METHODS.savePermissionGrant,
+  SASCODE_WS_METHODS.saveBrowserProfile,
+  SASCODE_WS_METHODS.createBrowserInstance,
+  SASCODE_WS_METHODS.acquireBrowserControl,
+  SASCODE_WS_METHODS.releaseBrowserControl,
+  SASCODE_WS_METHODS.updateBrowserInstance,
+  SASCODE_WS_METHODS.installModule,
+  SASCODE_WS_METHODS.instantiateModule,
+  SASCODE_WS_METHODS.activateModule,
+  SASCODE_WS_METHODS.updateModuleInstance,
+  SASCODE_WS_METHODS.bootstrapProject,
+  SASCODE_WS_METHODS.startFeature,
+  SASCODE_WS_METHODS.saveWorkspaceLayout,
+  SASCODE_WS_METHODS.saveAttentionPreference,
+  SASCODE_WS_METHODS.resolveAttentionItem,
   WS_METHODS.terminalWrite,
   WS_METHODS.terminalAckOutput,
   WS_METHODS.terminalResize,
@@ -32,6 +60,9 @@ const EXPENSIVE_READ_METHODS = new Set<string>([
   ORCHESTRATION_WS_METHODS.getFullThreadDiff,
   ORCHESTRATION_WS_METHODS.replayEvents,
   ORCHESTRATION_WS_METHODS.listProviderDeliveryBlockers,
+  SASCODE_WS_METHODS.getWorkspaceSnapshot,
+  SASCODE_WS_METHODS.getProjectSnapshot,
+  SASCODE_WS_METHODS.listEvents,
   WS_METHODS.projectsSearchEntries,
   WS_METHODS.projectsSearchLocalEntries,
   WS_METHODS.projectsReadFile,

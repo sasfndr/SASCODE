@@ -103,6 +103,12 @@ import Migration0084 from "./Migrations/084_AutomationNotificationPolicy.ts";
 import Migration0085 from "./Migrations/085_AutomationSettings.ts";
 import Migration0086 from "./Migrations/086_NormalizeStudioThreadWorkspaces.ts";
 import Migration0087 from "./Migrations/087_DropUnusedOrchestrationEventIndexes.ts";
+import Migration0088 from "./Migrations/088_SascodeDirectorCore.ts";
+import Migration0089 from "./Migrations/089_SascodeRouting.ts";
+import Migration0090 from "./Migrations/090_SascodeContextEvidence.ts";
+import Migration0091 from "./Migrations/091_SascodeCapabilityKernel.ts";
+import Migration0092 from "./Migrations/092_SascodeExecutionPlans.ts";
+import Migration0093 from "./Migrations/093_SascodeWorkspaceLayouts.ts";
 
 /**
  * Migration loader with all migrations defined inline.
@@ -205,6 +211,12 @@ export const migrationEntries = [
   [85, "AutomationSettings", Migration0085],
   [86, "NormalizeStudioThreadWorkspaces", Migration0086],
   [87, "DropUnusedOrchestrationEventIndexes", Migration0087],
+  [88, "SascodeDirectorCore", Migration0088],
+  [89, "SascodeRouting", Migration0089],
+  [90, "SascodeContextEvidence", Migration0090],
+  [91, "SascodeCapabilityKernel", Migration0091],
+  [92, "SascodeExecutionPlans", Migration0092],
+  [93, "SascodeWorkspaceLayouts", Migration0093],
 ] as const;
 
 export const makeMigrationLoader = (throughId?: number) =>

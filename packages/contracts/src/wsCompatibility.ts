@@ -28,6 +28,7 @@ export const WS_SERVER_CAPABILITIES = [
   "orchestration.cursor-safe-streams",
   "orchestration.thread-detail-snapshot",
   "rpc.typed-errors",
+  "sascode.director-v1",
 ] as const;
 
 export const WsCompatibilityAction = Schema.Literals(["reload", "update-client", "update-server"]);
