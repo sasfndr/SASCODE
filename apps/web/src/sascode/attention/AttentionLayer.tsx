@@ -43,12 +43,15 @@ const TONE_INK: Record<string, string> = {
 export interface AttentionLayerProps {
   projectId: ProjectId | null;
   onOpenSession: (threadId: ThreadId) => void;
+  /** Development visual fixture only; replaces the live attention snapshot. */
+  fixtureToast?: { summary: string; detail: string } | undefined;
 }
 
-export function AttentionLayer({ projectId }: AttentionLayerProps) {
+export function AttentionLayer({ projectId, fixtureToast }: AttentionLayerProps) {
   const queryClient = useQueryClient();
   const snapshot = useQuery(projectSnapshotQueryOptions(projectId));
   const [resolving, setResolving] = useState<string | null>(null);
+  const [fixtureToastDismissed, setFixtureToastDismissed] = useState(false);
 
   const items = useMemo(
     () => inAppAttentionItems(snapshot.data?.attention ?? undefined),
@@ -74,6 +77,34 @@ export function AttentionLayer({ projectId }: AttentionLayerProps) {
     [projectId, queryClient],
   );
 
+  // One shape for both sources, so the fixture exercises the real toast rather
+  // than a look-alike drawn beside it.
+  const toasts = useMemo(() => {
+    if (fixtureToast) {
+      // Dismiss is local: there is no backend fingerprint to resolve, but the
+      // control must still be present and must still work, or the fixture would
+      // be showing a different component than production does.
+      return fixtureToastDismissed
+        ? []
+        : [
+            {
+              id: "fixture-toast",
+              summary: fixtureToast.summary,
+              detail: fixtureToast.detail,
+              tone: "accent",
+              onDismiss: () => setFixtureToastDismissed(true),
+            },
+          ];
+    }
+    return items.map((entry) => ({
+      id: entry.item.fingerprint,
+      summary: entry.item.summary,
+      detail: entry.item.recommendedAction ?? null,
+      tone: ATTENTION_TONE[entry.item.state] ?? "resting",
+      onDismiss: () => void dismiss(entry.item.fingerprint),
+    }));
+  }, [dismiss, fixtureToast, fixtureToastDismissed, items]);
+
   return (
     <>
       {/* Announcements are separated by politeness so a failure can be assertive
@@ -91,55 +122,83 @@ export function AttentionLayer({ projectId }: AttentionLayerProps) {
           .join(". ")}
       </p>
 
-      {items.length > 0 ? (
-        <div className="pointer-events-none absolute bottom-4 right-4 z-30 flex w-[320px] flex-col gap-2">
-          {items.map((entry) => {
-            const tone = ATTENTION_TONE[entry.item.state];
-            return (
-              <div
-                key={entry.item.fingerprint}
-                className="sas-glass sas-rim sas-settle pointer-events-auto flex items-start gap-2.5 p-3"
-                role="status"
-              >
-                <span
-                  aria-hidden="true"
-                  className="mt-[3px] size-[7px] shrink-0 rounded-full"
-                  style={{ backgroundColor: TONE_INK[tone] }}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[12px] font-medium" style={{ color: "var(--sas-text)" }}>
-                    {entry.item.summary}
-                  </p>
-                  {entry.item.recommendedAction ? (
-                    <p
-                      className="mt-0.5 text-[11.5px]"
-                      style={{ color: "var(--sas-text-secondary)" }}
-                    >
-                      {entry.item.recommendedAction}
-                    </p>
-                  ) : null}
-                  <span
-                    className="mt-1.5 inline-block rounded-full px-2 py-[2px] text-[10px]"
-                    style={{ backgroundColor: TONE_FILL[tone], color: TONE_INK[tone] }}
-                  >
-                    {entry.item.reasonCode}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void dismiss(entry.item.fingerprint)}
-                  disabled={resolving === entry.item.fingerprint}
-                  aria-label={`Dismiss: ${entry.item.summary}`}
-                  className="sas-transition sas-focusable shrink-0 rounded p-0.5 disabled:opacity-40"
-                  style={{ color: "var(--sas-text-muted)" }}
-                >
-                  <IconX size={13} stroke={1.7} />
-                </button>
-              </div>
-            );
-          })}
+      {toasts.length > 0 ? (
+        <div className="pointer-events-none absolute right-[30px] bottom-[26px] z-30 flex w-[314px] flex-col gap-2">
+          {toasts.map((toast) => (
+            <DecisionToast
+              key={toast.id}
+              summary={toast.summary}
+              detail={toast.detail}
+              tone={toast.tone}
+              busy={resolving === toast.id}
+              {...(toast.onDismiss ? { onDismiss: toast.onDismiss } : {})}
+            />
+          ))}
         </div>
       ) : null}
     </>
+  );
+}
+
+interface DecisionToastProps {
+  summary: string;
+  detail: string | null;
+  tone: string;
+  busy: boolean;
+  onDismiss?: () => void;
+}
+
+/**
+ * One waiting decision. Two lines and a way out — not a notification card with a
+ * reason code, which is what made this read as system log output rather than as
+ * something a person is being asked to do.
+ */
+function DecisionToast(props: DecisionToastProps) {
+  return (
+    <div className="sas-glass sas-rim sas-settle pointer-events-auto flex items-center gap-3 p-3" role="status">
+      <span
+        aria-hidden="true"
+        className="flex size-[34px] shrink-0 items-center justify-center rounded-[var(--sas-radius-xs)]"
+        style={{ backgroundColor: TONE_FILL[props.tone] }}
+      >
+        <svg viewBox="0 0 14 14" className="size-[15px]">
+          <path
+            d="M7 0 L8.6 5.4 L14 7 L8.6 8.6 L7 14 L5.4 8.6 L0 7 L5.4 5.4 Z"
+            fill={TONE_INK[props.tone]}
+          />
+        </svg>
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[12.5px]" style={{ color: "var(--sas-text)" }}>
+          {props.summary}
+        </p>
+        {props.detail ? (
+          <p className="mt-0.5 truncate text-[12.5px]" style={{ color: "var(--sas-text-secondary)" }}>
+            {props.detail}
+          </p>
+        ) : null}
+      </div>
+
+      {props.onDismiss ? (
+        <>
+          <span
+            aria-hidden="true"
+            className="h-[26px] w-px shrink-0"
+            style={{ backgroundColor: "var(--sas-line)" }}
+          />
+          <button
+            type="button"
+            onClick={props.onDismiss}
+            disabled={props.busy}
+            aria-label={`Dismiss: ${props.summary}`}
+            className="sas-transition sas-focusable flex size-[26px] shrink-0 items-center justify-center rounded disabled:opacity-40"
+            style={{ color: "var(--sas-text-muted)" }}
+          >
+            <IconX size={15} stroke={1.7} />
+          </button>
+        </>
+      ) : null}
+    </div>
   );
 }

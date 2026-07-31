@@ -47,7 +47,10 @@ export function SessionShelf({
   draggingThreadId,
   forceExpanded,
 }: SessionShelfProps) {
-  const [expanded, setExpanded] = useState(false);
+  // A project with live work opens showing it. The shelf is the floor of the
+  // space, and a workspace whose sessions are hidden behind a handle on arrival
+  // makes the user hunt for the thing they came back to check.
+  const [expanded, setExpanded] = useState(true);
   const panelId = useId();
   const scrollerRef = useRef<HTMLDivElement>(null);
 
@@ -83,106 +86,23 @@ export function SessionShelf({
   if (cards.length === 0) return null;
 
   return (
-    <section
-      aria-label="Sessions"
-      className="sas-glass sas-rim sas-transition pointer-events-auto flex flex-col overflow-hidden"
-      data-sas-gesture-opaque="true"
-    >
-      <div className="flex items-center gap-3 px-3.5 py-2.5">
-        {activeCard ? (
-          <>
-            <span
-              aria-hidden="true"
-              className="size-[6px] shrink-0 rounded-full"
-              style={{ backgroundColor: TONE_DOT[SESSION_STATE_TONE[activeCard.state]] }}
-            />
-            <span className="truncate text-[12px] font-medium" style={{ color: "var(--sas-text)" }}>
-              {activeCard.title}
-            </span>
-            <span className="shrink-0 text-[11px]" style={{ color: "var(--sas-text-muted)" }}>
-              · {activeCard.modelLabel}
-            </span>
-            <span
-              className="hidden truncate text-[11px] sm:inline"
-              style={{ color: "var(--sas-text-secondary)" }}
-            >
-              {activeCard.activity}
-            </span>
-            <span
-              className="sas-numeric shrink-0 text-[10.5px]"
-              style={{ color: "var(--sas-text-muted)" }}
-            >
-              {formatElapsed(activeCard.elapsedMs)}
-            </span>
-          </>
-        ) : (
-          <span className="text-[12px]" style={{ color: "var(--sas-text-secondary)" }}>
-            No session in focus
-          </span>
-        )}
-
-        <div className="ms-auto flex shrink-0 items-center gap-2">
-          {actionable.length > 0 ? (
-            <span
-              className="rounded-full px-2 py-[3px] text-[10.5px] font-medium"
-              style={{
-                backgroundColor: "var(--sas-attention-soft)",
-                color: "var(--sas-attention-ink)",
-              }}
-            >
-              {actionable.length === 1
-                ? "1 decision ready"
-                : `${actionable.length} decisions ready`}
-            </span>
-          ) : null}
-          <button
-            type="button"
-            onClick={handleToggle}
-            aria-expanded={isOpen}
-            aria-controls={panelId}
-            className="sas-transition sas-focusable flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px]"
-            style={{
-              backgroundColor: "var(--sas-surface-raised)",
-              color: "var(--sas-text-secondary)",
-              border: "1px solid var(--sas-line)",
-            }}
-          >
-            Sessions
-            <IconChevronUp
-              size={13}
-              stroke={1.7}
-              aria-hidden="true"
-              className="sas-transition"
-              style={{ transform: isOpen ? "rotate(180deg)" : undefined }}
-            />
-          </button>
-          {others.length > 0 && !isOpen ? (
-            <span className="text-[11px]" style={{ color: "var(--sas-text-muted)" }}>
-              {others.length} more
-            </span>
-          ) : null}
-          <NewSessionButton projectId={projectId} label="New" />
-        </div>
-      </div>
-
-      <div
-        id={panelId}
-        className="sas-transition grid min-h-0"
-        style={{
-          gridTemplateRows: isOpen ? "1fr" : "0fr",
-          opacity: isOpen ? 1 : 0,
-        }}
-      >
-        <div className="min-h-0 overflow-hidden">
+    <section aria-label="Sessions" className="relative" data-sas-gesture-opaque="true">
+      {/* Expanded, the shelf is a quiet plane carrying the cards — the floor of
+          the space. Collapsed, the plane disappears entirely and only a single
+          line remains, so focused work is never framed by empty chrome. */}
+      {isOpen ? (
+        <div
+          id={panelId}
+          className="sas-glass sas-rim sas-transition pointer-events-auto overflow-hidden"
+        >
           <div
             ref={scrollerRef}
             role="list"
             onKeyDown={handleScrollKeys}
-            className="sas-scroll flex gap-2.5 px-3.5 pb-3.5 pt-0.5"
-            style={{ borderTop: "1px solid var(--sas-line)" }}
+            className="sas-scroll flex items-stretch gap-3.5 p-3.5"
           >
             {cards.map((card) => (
-              <div role="listitem" key={card.threadId}>
+              <div role="listitem" key={card.threadId} className="flex min-w-0 flex-1 basis-0">
                 <SessionCardView
                   card={card}
                   onAction={onAction}
@@ -193,6 +113,85 @@ export function SessionShelf({
             ))}
           </div>
         </div>
+      ) : (
+        <div
+          id={panelId}
+          className="sas-glass-quiet sas-transition pointer-events-auto mx-auto flex w-fit max-w-full items-center gap-3 px-4 py-2"
+          style={{ borderRadius: "999px" }}
+        >
+          {activeCard ? (
+            <>
+              <span
+                aria-hidden="true"
+                className="size-[6px] shrink-0 rounded-full"
+                style={{ backgroundColor: TONE_DOT[SESSION_STATE_TONE[activeCard.state]] }}
+              />
+              <span
+                className="truncate text-[12px] font-medium"
+                style={{ color: "var(--sas-text)" }}
+              >
+                {activeCard.title}
+              </span>
+              <span className="shrink-0 text-[11.5px]" style={{ color: "var(--sas-text-muted)" }}>
+                · {activeCard.modelLabel}
+              </span>
+              <span
+                className="sas-numeric shrink-0 text-[11px]"
+                style={{ color: "var(--sas-text-muted)" }}
+              >
+                {formatElapsed(activeCard.elapsedMs)}
+              </span>
+            </>
+          ) : (
+            <span className="text-[12px]" style={{ color: "var(--sas-text-secondary)" }}>
+              No session in focus
+            </span>
+          )}
+
+          {actionable.length > 0 ? (
+            <span
+              className="shrink-0 rounded-full px-2 py-[3px] text-[10.5px] font-medium"
+              style={{
+                backgroundColor: "var(--sas-attention-soft)",
+                color: "var(--sas-attention-ink)",
+              }}
+            >
+              {actionable.length === 1
+                ? "1 decision ready"
+                : `${actionable.length} decisions ready`}
+            </span>
+          ) : null}
+
+          {others.length > 0 ? (
+            <span className="shrink-0 text-[11.5px]" style={{ color: "var(--sas-text-muted)" }}>
+              {others.length} more
+            </span>
+          ) : null}
+
+          <NewSessionButton projectId={projectId} label="New" />
+        </div>
+      )}
+
+      {/* The handle sits under the shelf on the environment, not inside it: it
+          controls the shelf and must stay reachable when the shelf is gone. */}
+      <div className="absolute top-full left-0 mt-3.5 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleToggle}
+          aria-expanded={isOpen}
+          aria-controls={panelId}
+          aria-label={isOpen ? "Collapse sessions" : "Expand sessions"}
+          className="sas-glass sas-rim sas-transition sas-focusable pointer-events-auto flex h-[34px] w-[46px] items-center justify-center"
+          style={{ borderRadius: "var(--sas-radius-sm)", color: "var(--sas-text-on-canvas)" }}
+        >
+          <IconChevronUp
+            size={16}
+            stroke={1.9}
+            aria-hidden="true"
+            className="sas-transition"
+            style={{ transform: isOpen ? "rotate(180deg)" : undefined }}
+          />
+        </button>
       </div>
 
       {/* Screen readers get the state changes without a visual notification feed. */}

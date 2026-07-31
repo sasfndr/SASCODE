@@ -40,3 +40,7 @@ __screenshots__/
 /browser-sidebar-comment-preload.js.map
 /preload.js.map
 /bootstrap.js.map
+
+# Working directory for visual checkpoint captures; the reviewed set is
+# committed under docs/visual-checkpoints/.
+.visual-checkpoint/

@@ -1,17 +1,15 @@
 // FILE: sascode/project-space/ContextLensRail.tsx
-// Purpose: The context lens — a compact, temporary tool selector that drives the
-//          session's existing right dock rather than adding a second panel system.
-// Layer: Shell adapter.
+// Purpose: The context lens — a compact tool selector attached to the workbench
+//          edge, showing what the centre can become.
+// Layer: Presentation.
 //
-// This is not a permanent navigation rail. It shows the tools that make sense
-// for the focused session, opens them as a temporary layer, and lets the same
-// press close them again. Every tool it opens is an inherited, fully working
-// panel — the lens only decides what is on screen.
+// This is not a permanent navigation rail and not a second panel system. It
+// selects the workbench's mode, exactly as the header switcher does, so the two
+// controls are always describing the same surface. Only the active lens shows
+// its label; the rest stay as icons, which is what keeps a five-item rail from
+// reading as a sidebar.
 
-import { useCallback } from "react";
-import type { ThreadId } from "@synara/contracts";
 import {
-  IconBrowser,
   IconEye,
   IconFileDiff,
   IconFolder,
@@ -19,78 +17,31 @@ import {
   IconTerminal2,
 } from "@tabler/icons-react";
 
-import { useRightDockStore, selectRightDockState } from "~/rightDockStore";
-import type { ContextLensKind } from "../state/workspaceUiStore";
+import { WORKBENCH_MODE_LABEL, WORKBENCH_MODES, type WorkbenchMode } from "../workbench/workbenchModes";
 
-interface LensItem {
-  kind: ContextLensKind;
-  label: string;
-  icon: React.ReactNode;
-  /** Right-dock pane this lens opens, when it maps to one. */
-  pane: "browser" | "diff" | "terminal" | "explorer" | null;
-}
-
-const LENSES: ReadonlyArray<LensItem> = [
-  { kind: "preview", label: "Preview", icon: <IconEye size={15} stroke={1.6} />, pane: "browser" },
-  {
-    kind: "changes",
-    label: "Changes",
-    icon: <IconFileDiff size={15} stroke={1.6} />,
-    pane: "diff",
-  },
-  {
-    kind: "terminal",
-    label: "Terminal",
-    icon: <IconTerminal2 size={15} stroke={1.6} />,
-    pane: "terminal",
-  },
-  { kind: "files", label: "Files", icon: <IconFolder size={15} stroke={1.6} />, pane: "explorer" },
-  {
-    kind: "browser",
-    label: "Browser",
-    icon: <IconBrowser size={15} stroke={1.6} />,
-    pane: "browser",
-  },
-  { kind: "agents", label: "Agents", icon: <IconRoute size={15} stroke={1.6} />, pane: null },
-];
+const LENS_ICON: Record<WorkbenchMode, typeof IconEye> = {
+  preview: IconEye,
+  changes: IconFileDiff,
+  terminal: IconTerminal2,
+  files: IconFolder,
+  agents: IconRoute,
+};
 
 export interface ContextLensRailProps {
-  threadId: ThreadId | null;
-  active: ContextLensKind | null;
-  onSelect: (lens: ContextLensKind | null) => void;
-  /** Horizontal reads as tabs above a surface; vertical as an edge rail. */
+  /** Null when nothing is in the centre; the rail then renders nothing. */
+  mode: WorkbenchMode | null;
+  onSelect: (mode: WorkbenchMode) => void;
   orientation?: "horizontal" | "vertical";
 }
 
-export function ContextLensRail({
-  threadId,
-  active,
-  onSelect,
-  orientation = "horizontal",
-}: ContextLensRailProps) {
-  const toggleSingletonPane = useRightDockStore((state) => state.toggleSingletonPane);
-  const dockState = useRightDockStore((state) =>
-    threadId ? selectRightDockState(threadId)(state) : null,
-  );
-  const activePaneKind =
-    dockState?.open === true
-      ? (dockState.panes.find((pane) => pane.id === dockState.activePaneId)?.kind ?? null)
-      : null;
-
-  const handleSelect = useCallback(
-    (item: LensItem) => {
-      const next = active === item.kind ? null : item.kind;
-      onSelect(next);
-      // Panes that map onto the inherited dock are opened there, so the lens
-      // never becomes a competing implementation of Diff, Terminal, or Browser.
-      if (threadId && item.pane) {
-        toggleSingletonPane(threadId, { kind: item.pane });
-      }
-    },
-    [active, onSelect, threadId, toggleSingletonPane],
-  );
-
+export function ContextLensRail({ mode, onSelect, orientation = "vertical" }: ContextLensRailProps) {
+  if (mode === null) return null;
   const vertical = orientation === "vertical";
+
+  // Agents is reached from the workbench overflow, not the rail: five items make
+  // a column tall enough to read as a navigation sidebar, which is the one thing
+  // this shell must not grow.
+  const items = WORKBENCH_MODES.filter((item) => item !== "agents");
 
   return (
     <div
@@ -98,31 +49,32 @@ export function ContextLensRail({
       aria-label="Context lens"
       aria-orientation={orientation}
       data-sas-gesture-opaque="true"
-      className={`sas-glass-quiet sas-transition pointer-events-auto flex gap-0.5 p-1 ${
+      className={`sas-glass sas-rim sas-transition pointer-events-auto flex w-[82px] overflow-hidden ${
         vertical ? "flex-col" : "flex-row"
       }`}
+      style={{ borderRadius: "999px" }}
     >
-      {LENSES.map((item) => {
-        const isActive =
-          active === item.kind || (item.pane !== null && activePaneKind === item.pane);
+      {items.map((item, index) => {
+        const Icon = LENS_ICON[item];
+        const active = mode === item;
         return (
           <button
-            key={item.kind}
+            key={item}
             type="button"
-            aria-pressed={isActive}
-            onClick={() => handleSelect(item)}
-            title={item.label}
-            className="sas-transition sas-focusable flex items-center gap-1.5 rounded-[var(--sas-radius-xs)] px-2.5 py-1.5 text-[11.5px]"
+            aria-pressed={active}
+            onClick={() => onSelect(item)}
+            title={WORKBENCH_MODE_LABEL[item]}
+            className="sas-transition sas-focusable flex min-h-[48px] flex-col items-center justify-center gap-1 px-2 py-2"
             style={{
-              backgroundColor: isActive ? "var(--sas-surface-raised)" : "transparent",
-              color: isActive ? "var(--sas-text)" : "var(--sas-text-secondary)",
+              color: active ? "var(--sas-text)" : "var(--sas-text-secondary)",
+              ...(index > 0 ? { borderTop: "1px solid var(--sas-line)" } : {}),
             }}
           >
-            {item.icon}
-            {vertical ? (
-              <span className="sas-sr-only">{item.label}</span>
+            <Icon size={18} stroke={active ? 2 : 1.6} aria-hidden="true" />
+            {active ? (
+              <span className="text-[11.5px] font-medium">{WORKBENCH_MODE_LABEL[item]}</span>
             ) : (
-              <span className="hidden lg:inline">{item.label}</span>
+              <span className="sas-sr-only">{WORKBENCH_MODE_LABEL[item]}</span>
             )}
           </button>
         );

@@ -126,7 +126,9 @@ export function AmbientFrame(props: AmbientFrameProps) {
   return (
     <header
       className={cn(
-        "drag-region relative z-30 flex h-11 shrink-0 items-center gap-3 px-4 text-[12px]",
+        // 56px: the frame is the only fixed vertical anchor in the space, and
+        // every other band below it is measured from where it ends.
+        "drag-region relative z-30 flex h-14 shrink-0 items-center gap-3 px-5 text-[12px]",
         // The SASCODE shell renders no left sidebar, so this strip always owns
         // the macOS traffic-light gutter and the Windows caption gutter.
         trafficLightGutter,

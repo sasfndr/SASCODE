@@ -62,8 +62,22 @@ export interface SessionCardViewProps {
   dragging?: boolean;
 }
 
+/** Long state names would eat the session title on a four-up shelf. */
+const SHELF_STATE_LABEL: Partial<Record<SessionCard["state"], string>> = {
+  "waiting-dependency": "Waiting",
+  "needs-approval": "Approval needed",
+  "needs-input": "Needs input",
+  working: "Running",
+};
+
 function StatusChip({ card }: { card: SessionCard }) {
   const tone = SESSION_STATE_TONE[card.state];
+  // The session in the centre says "Active", not "Running": what matters about
+  // it is that it is the one you are looking at, which its neighbours are not.
+  const label =
+    card.active && card.state === "working"
+      ? "Active"
+      : (SHELF_STATE_LABEL[card.state] ?? SESSION_STATE_LABEL[card.state]);
   return (
     <span
       className="flex shrink-0 items-center gap-1.5 rounded-full px-2 py-[3px] text-[10.5px] font-medium"
@@ -75,7 +89,7 @@ function StatusChip({ card }: { card: SessionCard }) {
         className="size-[5px] rounded-full"
         style={{ backgroundColor: TONE_DOT[tone] }}
       />
-      {SESSION_STATE_LABEL[card.state]}
+      {label}
     </span>
   );
 }
@@ -104,7 +118,14 @@ export const SessionCardView = memo(function SessionCardView({
   return (
     <div
       role="group"
-      aria-label={`${card.title}. ${SESSION_STATE_LABEL[card.state]}. ${card.activity}`}
+      aria-label={[
+        card.title,
+        card.roleLabel,
+        SESSION_STATE_LABEL[card.state],
+        card.activity,
+      ]
+        .filter(Boolean)
+        .join(". ")}
       tabIndex={0}
       onKeyDown={handleKeyDown}
       onPointerEnter={() => setHovered(true)}
@@ -116,8 +137,11 @@ export const SessionCardView = memo(function SessionCardView({
       onDoubleClick={() => onAction("focus", card)}
       data-session-card={card.threadId}
       className={cn(
-        "sas-transition sas-glass-quiet sas-focusable group relative flex min-w-0 flex-col gap-2 p-3 text-left",
-        variant === "shelf" ? "w-[300px] shrink-0" : "w-full",
+        "sas-transition sas-glass-quiet sas-focusable group relative flex min-w-0 flex-col gap-1.5 px-3 py-2.5 text-left",
+        // Shelf cards share the width evenly rather than being fixed-size tiles:
+        // a shelf of four should read as one row of the space, not as a carousel
+        // that happens to have run out of items.
+        variant === "shelf" ? "min-w-[236px] flex-1 basis-0" : "w-full",
         dragging && "opacity-60",
       )}
       style={{
@@ -133,35 +157,46 @@ export const SessionCardView = memo(function SessionCardView({
             aria-label={`Drag ${card.title} into focus`}
             onPointerDown={(event) => onDragStart(card, event)}
             className="sas-transition sas-focusable -ms-1 mt-[1px] shrink-0 rounded p-0.5"
-            style={{ color: "var(--sas-text-muted)", opacity: hovered ? 1 : 0.35 }}
+            style={{ color: "var(--sas-text-muted)", opacity: hovered ? 1 : 0.6 }}
           >
-            <IconGripVertical size={13} stroke={1.6} />
+            <IconGripVertical size={15} stroke={1.7} />
           </button>
         ) : null}
 
         <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-start gap-2">
-            <span
-              className="min-w-0 flex-1 truncate text-[12.5px] font-medium"
-              style={{ color: "var(--sas-text)" }}
-              title={card.title}
-            >
-              {card.title}
+          {/* Session and model read as one identity, the way "file · branch"
+              does. Splitting them onto two lines made the model look like
+              metadata about the card rather than who is doing the work. */}
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
+              <span
+                className="truncate text-[13px] font-semibold"
+                style={{ color: "var(--sas-text)" }}
+                title={card.title}
+              >
+                {card.title}
+              </span>
+              <span aria-hidden="true" style={{ color: "var(--sas-text-muted)" }}>
+                ·
+              </span>
+              <span
+                className="shrink-0 text-[12.5px]"
+                style={{ color: "var(--sas-text-secondary)" }}
+              >
+                {card.modelLabel}
+              </span>
             </span>
             <StatusChip card={card} />
           </div>
-          <div
-            className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[10.5px]"
-            style={{ color: "var(--sas-text-muted)" }}
-          >
-            <span className="truncate">{card.modelLabel}</span>
-            {card.roleLabel ? (
-              <>
-                <span aria-hidden="true">·</span>
-                <span className="truncate">{card.roleLabel}</span>
-              </>
-            ) : null}
-          </div>
+          {/* The role deliberately does not get its own line on the shelf. It
+              is already in the card's accessible name, and a fourth row is what
+              pushed the shelf past the height the composition allows for it —
+              the overview card has the room to show it. */}
+          {card.roleLabel && variant === "overview" ? (
+            <p className="mt-0.5 truncate text-[10.5px]" style={{ color: "var(--sas-text-muted)" }}>
+              {card.roleLabel}
+            </p>
+          ) : null}
         </div>
       </div>
 

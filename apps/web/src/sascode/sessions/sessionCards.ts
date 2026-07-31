@@ -14,6 +14,7 @@ import type {
   SascodeProjectSnapshot,
   ThreadId,
   Workflow,
+  WorkflowId,
   WorkUnit,
   WorkUnitAttempt,
 } from "@synara/contracts";
@@ -70,7 +71,7 @@ export interface SessionCard {
    * workflow whose graph makes progress genuinely countable.
    */
   progress: number | null;
-  workflowId: string | null;
+  workflowId: WorkflowId | null;
   workUnitId: string | null;
   attemptId: string | null;
   /** Backend attention fingerprint, so resolving goes through the Director. */

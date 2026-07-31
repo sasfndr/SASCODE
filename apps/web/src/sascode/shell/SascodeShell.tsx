@@ -21,6 +21,8 @@ import { EditSpaceLayer } from "../editspace/EditSpaceLayer";
 import { FirstRun } from "../onboarding/FirstRun";
 import { ProjectOverview } from "../overview/ProjectOverview";
 import { ProjectSpace } from "../project-space/ProjectSpace";
+import { useVisualFixture } from "../fixture/useVisualFixture";
+import { workbenchModeFromLens } from "../workbench/workbenchModes";
 import { ProjectSpaceSkeleton } from "../sessions/SessionSurfaceSkeleton";
 import { SpaceViewport } from "./SpaceViewport";
 import { StartFeatureDialog } from "../feature/StartFeatureDialog";
@@ -259,6 +261,33 @@ function SascodeShellInner({ routeThreadId, search, splitViewId }: SascodeShellP
     return dock === "top" || dock === "left" || dock === "floating" ? dock : "left";
   }, [layout.modules]);
 
+  // The context lens and the workbench are two controls over one surface, so the
+  // lens selection *is* the workbench mode. Lenses that are not a centre mode
+  // (evidence, usage) leave the workbench showing Preview and open elsewhere.
+  const workbenchMode = workbenchModeFromLens(ui.contextLens) ?? "preview";
+
+  // A link into a specific diff has to land on the diff. The old surface read
+  // these search params itself; the workbench does not, so the shell translates
+  // the route's intent into a mode once, and leaves the user in charge after.
+  const deepLinkedDiff = Boolean(search.diffTurnId ?? search.diffFilePath);
+  const appliedDiffLinkRef = useRef(false);
+  useEffect(() => {
+    if (!deepLinkedDiff || appliedDiffLinkRef.current) return;
+    appliedDiffLinkRef.current = true;
+    ui.setContextLens("changes");
+  }, [deepLinkedDiff, ui]);
+
+  // Durable settings may store the dim as a percentage; the environment takes
+  // a ratio, and clamping here keeps a bad stored value from blacking out the
+  // scene entirely.
+  const backgroundDim = useMemo(() => {
+    const raw = layout.theme.backgroundDim;
+    const ratio = raw > 1 ? raw / 100 : raw;
+    return Math.min(1, Math.max(0, Number.isFinite(ratio) ? ratio : 0));
+  }, [layout.theme.backgroundDim]);
+
+  const visualFixture = useVisualFixture();
+
   const handleBootstrap = useCallback(async () => {
     if (!activeProject || bootstrapping) return;
     setBootstrapping(true);
@@ -357,15 +386,27 @@ function SascodeShellInner({ routeThreadId, search, splitViewId }: SascodeShellP
           node: (
             <ProjectSpace
               key={project.id}
-              project={project}
+              project={
+                visualFixture && index === activeIndex
+                  ? { ...project, name: visualFixture.projectName }
+                  : project
+              }
               active={index === activeIndex}
-              cards={index === activeIndex ? spaceData.cards : []}
+              cards={
+                index === activeIndex
+                  ? (visualFixture?.cards ?? spaceData.cards)
+                  : []
+              }
               threadsById={threadsById}
-              activeThreadIds={index === activeIndex ? activeThreadIds : []}
+              activeThreadIds={
+                index === activeIndex
+                  ? (visualFixture ? [visualFixture.focusedThreadId] : activeThreadIds)
+                  : []
+              }
               focusedSide={ui.focusedSide}
               splitRatio={ui.splitRatio}
               onSplitRatioChange={ui.setSplitRatio}
-              chatDock={chatDock}
+              chatDock={visualFixture && index === activeIndex ? visualFixture.chatDock : chatDock}
               onChatDockChange={(dock) =>
                 layoutController.update(
                   (current) => ({
@@ -379,8 +420,27 @@ function SascodeShellInner({ routeThreadId, search, splitViewId }: SascodeShellP
               }
               chatExpanded={ui.chatExpanded}
               onChatExpandedChange={ui.setChatExpanded}
-              contextLens={ui.contextLens}
-              onContextLensChange={ui.setContextLens}
+              workbenchMode={workbenchMode}
+              onWorkbenchModeChange={ui.setContextLens}
+              previousProject={
+                index !== activeIndex
+                  ? null
+                  : visualFixture
+                    ? { name: visualFixture.previousProjectName, aura: null }
+                    : index > 0
+                      ? { name: projects[index - 1]?.name ?? "", aura: null }
+                      : null
+              }
+              nextProject={
+                index !== activeIndex
+                  ? null
+                  : visualFixture
+                    ? { name: visualFixture.nextProjectName, aura: null }
+                    : index < projects.length - 1
+                      ? { name: projects[index + 1]?.name ?? "", aura: null }
+                      : null
+              }
+              onStepProject={handleStepProject}
               onSessionAction={handleSessionAction}
               onFocusSide={ui.setFocusedSide}
               onStartFeature={(request) => {
@@ -389,11 +449,19 @@ function SascodeShellInner({ routeThreadId, search, splitViewId }: SascodeShellP
               }}
               onBootstrapProject={() => void handleBootstrap()}
               needsBootstrap={layoutController.usingDefault && spaceData.snapshotReady}
-              search={search}
-              splitViewId={splitViewId}
               editSpaceActive={layout.mode === "edit-space"}
-              flatBackground={theme.opaquePanels}
+              flatBackground={theme.opaquePanels || theme.effective.reducedTransparency}
               backgroundImageUrl={null}
+              backgroundDim={backgroundDim}
+              fixture={
+                visualFixture && index === activeIndex
+                  ? {
+                      transcript: visualFixture.transcript,
+                      activity: visualFixture.activity,
+                      renderMode: visualFixture.renderMode,
+                    }
+                  : undefined
+              }
             />
           ),
         }))}
@@ -472,6 +540,7 @@ function SascodeShellInner({ routeThreadId, search, splitViewId }: SascodeShellP
       <AttentionLayer
         projectId={activeProject?.id ?? null}
         onOpenSession={(threadId) => setActiveThreads([threadId])}
+        fixtureToast={visualFixture?.toast}
       />
     </div>
   );
