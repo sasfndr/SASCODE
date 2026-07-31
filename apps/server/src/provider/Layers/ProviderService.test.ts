@@ -2839,6 +2839,91 @@ routing.layer("ProviderServiceLive routing", (it) => {
     }).pipe(Effect.provide(NodeServices.layer)),
   );
 
+  it.effect("does not reuse a native resume cursor when switching provider accounts", () =>
+    Effect.gen(function* () {
+      const tempDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "synara-provider-service-account-switch-"),
+      );
+      const dbPath = path.join(tempDir, "orchestration.sqlite");
+      const persistenceLayer = makeSqlitePersistenceLive(dbPath);
+      const runtimeRepositoryLayer = ProviderSessionRuntimeRepositoryLive.pipe(
+        Layer.provide(persistenceLayer),
+      );
+      const threadId = asThreadId("thread-claude-account-switch");
+
+      const firstClaude = makeFakeCodexAdapter("claudeAgent");
+      const firstRegistry: typeof ProviderAdapterRegistry.Service = {
+        getByProvider: (provider) =>
+          provider === "claudeAgent"
+            ? Effect.succeed(firstClaude.adapter)
+            : Effect.fail(new ProviderUnsupportedError({ provider })),
+        listProviders: () => Effect.succeed(["claudeAgent"]),
+      };
+      const firstProviderLayer = makeProviderServiceLive().pipe(
+        Layer.provide(Layer.succeed(ProviderAdapterRegistry, firstRegistry)),
+        Layer.provide(
+          ProviderSessionDirectoryLive.pipe(Layer.provide(runtimeRepositoryLayer)),
+        ),
+        Layer.provide(AnalyticsService.layerTest),
+      );
+
+      yield* Effect.gen(function* () {
+        const provider = yield* ProviderService;
+        yield* provider.startSession(threadId, {
+          provider: "claudeAgent",
+          threadId,
+          cwd: "/tmp/project-claude-account-switch",
+          providerOptions: {
+            providerConnectionId: "provider:claudeAgent:primary",
+            providerAccountLabel: "Primary Claude Max",
+            claudeAgent: { configDir: "/tmp/claude-primary" },
+          },
+          runtimeMode: "full-access",
+        });
+      }).pipe(Effect.provide(firstProviderLayer));
+
+      const secondClaude = makeFakeCodexAdapter("claudeAgent");
+      const secondRegistry: typeof ProviderAdapterRegistry.Service = {
+        getByProvider: (provider) =>
+          provider === "claudeAgent"
+            ? Effect.succeed(secondClaude.adapter)
+            : Effect.fail(new ProviderUnsupportedError({ provider })),
+        listProviders: () => Effect.succeed(["claudeAgent"]),
+      };
+      const secondProviderLayer = makeProviderServiceLive().pipe(
+        Layer.provide(Layer.succeed(ProviderAdapterRegistry, secondRegistry)),
+        Layer.provide(
+          ProviderSessionDirectoryLive.pipe(Layer.provide(runtimeRepositoryLayer)),
+        ),
+        Layer.provide(AnalyticsService.layerTest),
+      );
+
+      yield* Effect.gen(function* () {
+        const provider = yield* ProviderService;
+        yield* provider.startSession(threadId, {
+          provider: "claudeAgent",
+          threadId,
+          cwd: "/tmp/project-claude-account-switch",
+          providerOptions: {
+            providerConnectionId: "provider:claudeAgent:secondary",
+            providerAccountLabel: "Secondary Claude Max",
+          },
+          runtimeMode: "full-access",
+        });
+      }).pipe(Effect.provide(secondProviderLayer));
+
+      assert.equal(secondClaude.startSession.mock.calls.length, 1);
+      const switchedInput = secondClaude.startSession.mock.calls[0]?.[0];
+      assert.deepEqual(switchedInput?.providerOptions, {
+        providerConnectionId: "provider:claudeAgent:secondary",
+        providerAccountLabel: "Secondary Claude Max",
+      });
+      assert.equal("resumeCursor" in (switchedInput ?? {}), false);
+
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
+
   it.effect("clears stale resume cursor while preserving provider options for fresh restart", () =>
     Effect.gen(function* () {
       const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "synara-provider-service-clear-"));
@@ -2848,6 +2933,8 @@ routing.layer("ProviderServiceLive routing", (it) => {
         Layer.provide(persistenceLayer),
       );
       const providerOptions = {
+        providerConnectionId: "provider:codex:second",
+        providerAccountLabel: "Second Codex Max",
         codex: {
           homePath: "/tmp/custom-codex-home",
           binaryPath: "/usr/local/bin/codex",
@@ -2880,6 +2967,11 @@ routing.layer("ProviderServiceLive routing", (it) => {
           providerOptions,
           runtimeMode: "full-access",
         });
+        assert.equal(
+          session.providerConnectionId,
+          "provider:codex:second",
+        );
+        assert.equal(session.providerAccountLabel, "Second Codex Max");
         assert.equal(typeof provider.clearSessionResumeCursor, "function");
         if (provider.clearSessionResumeCursor) {
           yield* provider.clearSessionResumeCursor({ threadId: session.threadId });

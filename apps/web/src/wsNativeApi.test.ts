@@ -26,6 +26,9 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const requestMock = vi.fn<(...args: Array<unknown>) => Promise<unknown>>();
+const subscribeSascodeEventsMock = vi.fn<
+  (input: unknown, listener: (event: unknown) => void) => () => void
+>(() => () => undefined);
 const disposeMock = vi.fn();
 const showContextMenuFallbackMock =
   vi.fn<
@@ -63,6 +66,7 @@ vi.mock("./wsTransport", () => {
     WsTransport: class MockWsTransport {
       request = requestMock;
       subscribe = subscribeMock;
+      subscribeSascodeEvents = subscribeSascodeEventsMock;
       onStateChange() {
         return () => undefined;
       }
@@ -127,6 +131,7 @@ const defaultProviders: ReadonlyArray<ServerProviderStatus> = [
 beforeEach(() => {
   vi.resetModules();
   requestMock.mockReset();
+  subscribeSascodeEventsMock.mockClear();
   disposeMock.mockReset();
   showContextMenuFallbackMock.mockReset();
   subscribeMock.mockClear();
@@ -142,6 +147,42 @@ afterEach(() => {
 });
 
 describe("wsNativeApi", () => {
+  it("exposes the typed SASCODE control plane and Director event stream", async () => {
+    requestMock.mockResolvedValue({});
+    const { createWsNativeApi } = await import("./wsNativeApi");
+    const api = createWsNativeApi();
+
+    await api.sascode.getProjectSnapshot({} as never);
+    await api.sascode.bootstrapProject({} as never);
+    await api.sascode.startFeature({} as never);
+    const listener = vi.fn();
+    const unsubscribe = api.sascode.subscribeEvents(
+      { afterSequence: 0, projectId: null },
+      listener,
+    );
+
+    expect(requestMock).toHaveBeenNthCalledWith(
+      1,
+      "sascode.getProjectSnapshot",
+      {},
+    );
+    expect(requestMock).toHaveBeenNthCalledWith(
+      2,
+      "sascode.bootstrapProject",
+      {},
+    );
+    expect(requestMock).toHaveBeenNthCalledWith(
+      3,
+      "sascode.startFeature",
+      {},
+    );
+    expect(subscribeSascodeEventsMock).toHaveBeenCalledWith(
+      { afterSequence: 0, projectId: null },
+      listener,
+    );
+    unsubscribe();
+  });
+
   it("delivers and caches valid server.welcome payloads", async () => {
     const { createWsNativeApi, onServerWelcome } = await import("./wsNativeApi");
 

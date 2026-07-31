@@ -298,7 +298,7 @@ describe("Antigravity CLI integration helpers", () => {
     const invocations: Array<{
       readonly command: string;
       readonly args: string[];
-      readonly options: { cwd?: string; timeoutMs?: number };
+      readonly options: { cwd?: string; timeoutMs?: number; homeDir?: string };
     }> = [];
     try {
       await ensureCapturePlugin("/usr/local/bin/agy", stdioProxy, {
@@ -323,7 +323,7 @@ describe("Antigravity CLI integration helpers", () => {
         {
           command: "/usr/local/bin/agy",
           args: ["plugin", "install", pluginDir],
-          options: { timeoutMs: 30_000 },
+          options: { timeoutMs: 30_000, homeDir },
         },
       ]);
       expect(

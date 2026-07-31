@@ -36,6 +36,8 @@ const ProviderSessionStatus = Schema.Literals([
 
 export const ProviderSession = Schema.Struct({
   provider: ProviderKind,
+  providerConnectionId: Schema.optional(TrimmedNonEmptyString),
+  providerAccountLabel: Schema.optional(TrimmedNonEmptyString),
   status: ProviderSessionStatus,
   runtimeMode: RuntimeMode,
   cwd: Schema.optional(TrimmedNonEmptyString),

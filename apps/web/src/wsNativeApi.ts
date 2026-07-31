@@ -35,6 +35,7 @@ import {
   type TerminalEvent,
   ORCHESTRATION_WS_CHANNELS,
   ORCHESTRATION_WS_METHODS,
+  SASCODE_WS_METHODS,
   type ContextMenuItem,
   type NativeApi,
   ServerConfigUpdatedPayload,
@@ -724,6 +725,70 @@ export function createWsNativeApi(): NativeApi {
       },
       onShellEvent: orchestrationShellEventListeners.subscribe,
       onThreadEvent: orchestrationThreadEventListeners.subscribe,
+    },
+    sascode: {
+      getWorkspaceSnapshot: (input) =>
+        transport.request(SASCODE_WS_METHODS.getWorkspaceSnapshot, input),
+      getProjectSnapshot: (input) =>
+        transport.request(SASCODE_WS_METHODS.getProjectSnapshot, input),
+      getWorkflow: (input) => transport.request(SASCODE_WS_METHODS.getWorkflow, input),
+      listProviderCapabilities: () =>
+        transport.request(SASCODE_WS_METHODS.listProviderCapabilities, {}),
+      listProviderAccounts: () =>
+        transport.request(SASCODE_WS_METHODS.listProviderAccounts, {}),
+      saveProviderAccount: (input) =>
+        transport.request(SASCODE_WS_METHODS.saveProviderAccount, input),
+      setProviderAccountEnabled: (input) =>
+        transport.request(SASCODE_WS_METHODS.setProviderAccountEnabled, input),
+      refreshProviderCapabilities: (input) =>
+        transport.request(SASCODE_WS_METHODS.refreshProviderCapabilities, input),
+      listEvents: (input) => transport.request(SASCODE_WS_METHODS.listEvents, input),
+      executeDirectorCommand: (input) =>
+        transport.request(SASCODE_WS_METHODS.executeDirectorCommand, input),
+      scheduleWorkUnit: (input) =>
+        transport.request(SASCODE_WS_METHODS.scheduleWorkUnit, input),
+      runWorkflow: (input) => transport.request(SASCODE_WS_METHODS.runWorkflow, input),
+      submitResult: (input) => transport.request(SASCODE_WS_METHODS.submitResult, input),
+      dispatchAttempt: (input) =>
+        transport.request(SASCODE_WS_METHODS.dispatchAttempt, input),
+      subscribeEvents: (input, listener) =>
+        transport.subscribeSascodeEvents(input, listener),
+      publishRoutingPolicy: (input) =>
+        transport.request(SASCODE_WS_METHODS.publishRoutingPolicy, input),
+      upsertContextArtifact: (input) =>
+        transport.request(SASCODE_WS_METHODS.upsertContextArtifact, input),
+      savePermissionGrant: (input) =>
+        transport.request(SASCODE_WS_METHODS.savePermissionGrant, input),
+      saveBrowserProfile: (input) =>
+        transport.request(SASCODE_WS_METHODS.saveBrowserProfile, input),
+      createBrowserInstance: (input) =>
+        transport.request(SASCODE_WS_METHODS.createBrowserInstance, input),
+      acquireBrowserControl: (input) =>
+        transport.request(SASCODE_WS_METHODS.acquireBrowserControl, input),
+      releaseBrowserControl: (input) =>
+        transport.request(SASCODE_WS_METHODS.releaseBrowserControl, input),
+      updateBrowserInstance: (input) =>
+        transport.request(SASCODE_WS_METHODS.updateBrowserInstance, input),
+      installModule: (input) =>
+        transport.request(SASCODE_WS_METHODS.installModule, input),
+      instantiateModule: (input) =>
+        transport.request(SASCODE_WS_METHODS.instantiateModule, input),
+      activateModule: (input) =>
+        transport.request(SASCODE_WS_METHODS.activateModule, input),
+      updateModuleInstance: (input) =>
+        transport.request(SASCODE_WS_METHODS.updateModuleInstance, input),
+      bootstrapProject: (input) =>
+        transport.request(SASCODE_WS_METHODS.bootstrapProject, input),
+      startFeature: (input) =>
+        transport.request(SASCODE_WS_METHODS.startFeature, input),
+      getWorkspaceLayout: (input) =>
+        transport.request(SASCODE_WS_METHODS.getWorkspaceLayout, input),
+      saveWorkspaceLayout: (input) =>
+        transport.request(SASCODE_WS_METHODS.saveWorkspaceLayout, input),
+      saveAttentionPreference: (input) =>
+        transport.request(SASCODE_WS_METHODS.saveAttentionPreference, input),
+      resolveAttentionItem: (input) =>
+        transport.request(SASCODE_WS_METHODS.resolveAttentionItem, input),
     },
     automation: {
       list: (input) => transport.request(WS_METHODS.automationList, input),

@@ -6,6 +6,7 @@
 import {
   ORCHESTRATION_WS_CHANNELS,
   ORCHESTRATION_WS_METHODS,
+  SASCODE_WS_METHODS,
   WS_BOOTSTRAP_METHOD,
   WS_BOOTSTRAP_PATH,
   WS_CHANNELS,
@@ -26,6 +27,8 @@ import {
   type OrchestrationShellStreamItem,
   type OrchestrationThreadStreamItem,
   type ProjectDevServerEvent,
+  type DirectorEvent,
+  type SascodeSubscribeEventsInput,
   type ServerConfigStreamEvent,
   type ServerLifecycleStreamEvent,
   type ServerProviderStatusesUpdatedPayload,
@@ -48,6 +51,11 @@ type PushListener<C extends WsPushChannel> = (message: WsPushMessage<C>) => void
 type RpcClientEffect = typeof makeRpcClient;
 type RpcClientInstance =
   RpcClientEffect extends Effect.Effect<infer Client, any, any> ? Client : never;
+
+interface SascodeEventSubscription {
+  readonly input: SascodeSubscribeEventsInput;
+  readonly listener: (event: DirectorEvent) => void;
+}
 
 class WsTransportRpcError extends Data.TaggedError("WsTransportRpcError")<{
   readonly message: string;
@@ -479,6 +487,8 @@ export class WsTransport {
   private readonly activeThreadStreamInputs = new Map<string, unknown>();
   private shellSubscribed = false;
   private readonly threadSubscriptions = new Map<string, unknown>();
+  private readonly sascodeEventSubscriptions = new Map<number, SascodeEventSubscription>();
+  private nextSascodeEventSubscriptionId = 1;
   private compatibility: WsBootstrapNegotiateResult | null = null;
   private compatibilityIssue: WsCompatibilityError | null = null;
 
@@ -613,6 +623,27 @@ export class WsTransport {
     };
   }
 
+  subscribeSascodeEvents(
+    input: SascodeSubscribeEventsInput,
+    listener: (event: DirectorEvent) => void,
+  ): () => void {
+    if (this.disposed) throw new Error("Transport disposed");
+    const subscriptionId = this.nextSascodeEventSubscriptionId++;
+    this.sascodeEventSubscriptions.set(subscriptionId, { input, listener });
+    void this.getClient()
+      .then((client) => this.startSascodeEventStream(client, subscriptionId))
+      .catch((error) => {
+        if (!this.disposed && this.sascodeEventSubscriptions.has(subscriptionId)) {
+          console.warn("SASCODE Director event stream failed to start", error);
+        }
+      });
+
+    return () => {
+      this.sascodeEventSubscriptions.delete(subscriptionId);
+      void this.stopStream(`sascode.events:${subscriptionId}`);
+    };
+  }
+
   getLatestPush<C extends WsPushChannel>(channel: C): WsPushMessage<C> | null {
     const latest = this.latestPushByChannel.get(channel);
     return latest ? (latest as WsPushMessage<C>) : null;
@@ -678,6 +709,7 @@ export class WsTransport {
     for (const cleanup of this.streamCleanups.values()) cleanup();
     this.streamCleanups.clear();
     this.activeThreadStreamInputs.clear();
+    this.sascodeEventSubscriptions.clear();
     this.threadStreamFailureListeners.clear();
     // Dispose can race with initial connection or reconnect promises. Mark them
     // handled before closing the runtime so test/browser teardown stays quiet.
@@ -940,6 +972,9 @@ export class WsTransport {
     for (const [threadId, input] of this.threadSubscriptions) {
       await this.startThreadStream(client, threadId, input);
     }
+    for (const subscriptionId of this.sascodeEventSubscriptions.keys()) {
+      this.startSascodeEventStream(client, subscriptionId);
+    }
     return client;
   }
 
@@ -1163,6 +1198,45 @@ export class WsTransport {
       (event: OrchestrationThreadStreamItem) =>
         this.emit(ORCHESTRATION_WS_CHANNELS.threadEvent, event),
       restartThread,
+    );
+  }
+
+  private startSascodeEventStream(
+    client: RpcClientInstance,
+    subscriptionId: number,
+  ): void {
+    const subscription = this.sascodeEventSubscriptions.get(subscriptionId);
+    if (this.disposed || !subscription) return;
+    const key = `sascode.events:${subscriptionId}`;
+    const restart = () => {
+      if (!this.sascodeEventSubscriptions.has(subscriptionId)) return;
+      void this.getClient()
+        .then((nextClient) => this.startSascodeEventStream(nextClient, subscriptionId))
+        .catch((error) => {
+          if (!this.disposed && this.sascodeEventSubscriptions.has(subscriptionId)) {
+            console.warn("SASCODE Director event stream failed to restart", error);
+          }
+        });
+    };
+    this.startStream(
+      client,
+      key,
+      client[SASCODE_WS_METHODS.subscribeEvents](subscription.input),
+      (event: DirectorEvent) => {
+        const current = this.sascodeEventSubscriptions.get(subscriptionId);
+        if (!current) return;
+        if (event.sequence > current.input.afterSequence) {
+          this.sascodeEventSubscriptions.set(subscriptionId, {
+            ...current,
+            input: {
+              ...current.input,
+              afterSequence: event.sequence,
+            },
+          });
+        }
+        current.listener(event);
+      },
+      restart,
     );
   }
 

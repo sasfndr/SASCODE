@@ -86,3 +86,19 @@ export function providerStartOptionsFromServerSettings(
     },
   };
 }
+
+/**
+ * Overlay one account-scoped launch profile on the server defaults.
+ *
+ * Account profiles contain only non-secret process selectors (for example a
+ * CODEX_HOME or CLAUDE_CONFIG_DIR). Keeping the merge here gives every launch
+ * path identical semantics and avoids dropping unrelated provider defaults.
+ */
+export function mergeProviderStartOptions(
+  defaults: ProviderStartOptions,
+  account: ProviderStartOptions | undefined,
+): ProviderStartOptions {
+  return account === undefined
+    ? defaults
+    : deepMerge(defaults, account as DeepPartial<ProviderStartOptions>);
+}

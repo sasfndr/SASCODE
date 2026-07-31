@@ -727,6 +727,9 @@ export function makeCursorAdapter(
             ...(providerCursorOptions?.apiEndpoint !== undefined
               ? { apiEndpoint: providerCursorOptions.apiEndpoint }
               : {}),
+            ...(providerCursorOptions?.homePath !== undefined
+              ? { homePath: providerCursorOptions.homePath }
+              : {}),
           };
 
           const acp = yield* makeCursorAcpRuntime({

@@ -12,6 +12,7 @@ import {
   type OrchestrationThreadShell,
   type ProviderInteractionMode,
   type ProviderKind,
+  type ProviderStartOptions,
   type SynaraCreateThreadsInput,
   type SynaraCreateThreadsResult,
 } from "@synara/contracts";
@@ -102,6 +103,10 @@ interface CreationCoordinatorDependencies {
   readonly requireThreadShell: (
     threadId: string,
   ) => Effect.Effect<OrchestrationThreadShell, ToolInputError>;
+  readonly resolveProviderStartOptions?: (
+    connectionId: string,
+    provider: ProviderKind,
+  ) => Effect.Effect<ProviderStartOptions, unknown>;
 }
 
 export type GatewayCreationContext =
@@ -116,6 +121,17 @@ export type GatewayCreationContext =
       readonly integrationId: string;
       readonly allowedProjectIds: ReadonlySet<string>;
       readonly capabilities: ReadonlySet<string>;
+      readonly assertAuthority: () => Effect.Effect<void, GatewayToolError>;
+    }
+  | {
+      /**
+       * Trusted in-process caller used by SASCODE's Director. It reuses the
+       * exact durable worktree/thread saga without impersonating a provider
+       * turn or consuming an External MCP integration slot.
+       */
+      readonly kind: "internal-director";
+      readonly directorId: string;
+      readonly allowedProjectIds: ReadonlySet<string>;
       readonly assertAuthority: () => Effect.Effect<void, GatewayToolError>;
     };
 
@@ -182,6 +198,7 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
     serverConfig,
     loadProviderAvailabilities,
     requireThreadShell,
+    resolveProviderStartOptions,
   } = dependencies;
   const lockIndex = yield* Semaphore.make(1);
   const locks = new Map<string, { readonly lock: Semaphore.Semaphore; users: number }>();
@@ -325,10 +342,21 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
         context.kind === "provider-session"
           ? yield* requireThreadShell(context.callerThreadId)
           : null;
+      const principalId =
+        context.kind === "provider-session"
+          ? context.callerThreadId
+          : context.kind === "external-client"
+            ? context.integrationId
+            : context.directorId;
+      const internalCallerThreadId =
+        context.kind === "internal-director"
+          ? `sascode-director:${context.directorId}`
+          : null;
+      const internalCallerTurnId =
+        context.kind === "internal-director" ? input.requestId : null;
       const operationId = `gateway:create:${stableGatewayDigest({
         principalKind: context.kind,
-        principalId:
-          context.kind === "provider-session" ? context.callerThreadId : context.integrationId,
+        principalId,
         ...(callerTurnId ? { callerTurnId } : {}),
         requestId: input.requestId,
       })}`;
@@ -369,7 +397,33 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
               registerTask: () => Effect.void,
               markTaskStatus: () => Effect.void,
             }
-          : {
+          : context.kind === "internal-director"
+            ? {
+                getExisting: () =>
+                  operationRepository.getByScope({
+                    callerThreadId: internalCallerThreadId!,
+                    callerTurnId: internalCallerTurnId!,
+                    operationKind: "create_threads",
+                  }),
+                getById: operationRepository.getById,
+                reserve: (reservation) =>
+                  operationRepository.reserve({
+                    ...reservation,
+                    callerThreadId: internalCallerThreadId!,
+                    callerTurnId: internalCallerTurnId!,
+                    operationKind: "create_threads",
+                  }),
+                markDispatching: operationRepository.markDispatching,
+                recordWorktreeCreated: operationRepository.recordWorktreeCreated,
+                markCompensating: operationRepository.markCompensating,
+                recordCompensationFailure:
+                  operationRepository.recordCompensationFailure,
+                complete: operationRepository.complete,
+                fail: operationRepository.fail,
+                registerTask: () => Effect.void,
+                markTaskStatus: () => Effect.void,
+              }
+            : {
               getExisting: () =>
                 externalOperationRepository!.getOperationByRequest({
                   integrationId: context.integrationId,
@@ -400,7 +454,7 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
                   status,
                   now: gatewayIsoNow(),
                 }),
-            };
+              };
       const existingOperation = yield* operationStore
         .getExisting()
         .pipe(Effect.mapError((error) => new ToolInputError(errorText(error))));
@@ -466,13 +520,18 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
 
       const prepared = yield* Effect.forEach(input.threads, (spec, index) =>
         Effect.gen(function* () {
-          if (context.kind === "external-client" && spec.projectId === undefined) {
+          if (context.kind !== "provider-session" && spec.projectId === undefined) {
             return yield* Effect.fail(
-              new ToolInputError("External MCP task creation requires an explicit projectId."),
+              new ToolInputError(
+                "Non-provider task creation requires an explicit projectId.",
+              ),
             );
           }
           const projectId = ProjectId.makeUnsafe(spec.projectId ?? caller!.projectId);
-          if (context.kind === "external-client" && !context.allowedProjectIds.has(projectId)) {
+          if (
+            context.kind !== "provider-session" &&
+            !context.allowedProjectIds.has(projectId)
+          ) {
             return yield* Effect.fail(
               new GatewayToolError(
                 "capability_denied",
@@ -519,7 +578,7 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
           const runtimeMode =
             externalPolicy?.runtimeMode ??
             spec.runtimeMode ??
-            (context.kind === "external-client" || caller!.runtimeMode === "auto"
+            (context.kind !== "provider-session" || caller!.runtimeMode === "auto"
               ? "approval-required"
               : caller!.runtimeMode);
           if (
@@ -532,6 +591,28 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
               ),
             );
           }
+          const providerOptions =
+            spec.providerConnectionId === undefined
+              ? undefined
+              : yield* (
+                  resolveProviderStartOptions === undefined
+                    ? Effect.fail(
+                        new ToolInputError(
+                          "This task creation surface cannot select a provider account connection.",
+                        ),
+                      )
+                    : resolveProviderStartOptions(
+                        spec.providerConnectionId,
+                        target.provider,
+                      ).pipe(
+                        Effect.mapError(
+                          (error) =>
+                            new ToolInputError(
+                              `Provider account "${spec.providerConnectionId}" is unavailable. ${errorText(error)}`,
+                            ),
+                        ),
+                      )
+                );
           const title = spec.title ?? buildPromptThreadTitleFallback(spec.prompt);
           let worktreeRef: string | null = null;
           let copyChangesFrom: string | null = null;
@@ -614,6 +695,7 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
             projectId,
             workspaceRoot: project.workspaceRoot,
             target,
+            providerOptions,
             environment,
             runtimeMode,
             title,
@@ -1099,6 +1181,9 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
                       attachments: [],
                     },
                     modelSelection: entry.target,
+                    ...(entry.providerOptions === undefined
+                      ? {}
+                      : { providerOptions: entry.providerOptions }),
                     dispatchMode: "queue",
                     dispatchOrigin: "agent",
                     runtimeMode: entry.runtimeMode,
@@ -1118,6 +1203,12 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
                     projectId: entry.projectId,
                     title: entry.title,
                     target: entry.target,
+                    ...(entry.spec.providerConnectionId === undefined
+                      ? {}
+                      : {
+                          providerConnectionId:
+                            entry.spec.providerConnectionId,
+                        }),
                     provider: entry.target.provider,
                     model: entry.target.model,
                     runtimeMode: entry.runtimeMode,
@@ -1177,7 +1268,11 @@ export const makeCreateThreadsHandler = Effect.fn(function* (
         withCreationPlanLock(
           context.kind === "provider-session"
             ? `${context.callerThreadId}\u0000${context.callerTurnId ?? "inactive"}`
-            : `${context.integrationId}\u0000${input.requestId}`,
+            : `${
+                context.kind === "external-client"
+                  ? context.integrationId
+                  : context.directorId
+              }\u0000${input.requestId}`,
           effect,
         ),
       Effect.catch((error) =>

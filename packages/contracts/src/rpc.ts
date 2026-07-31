@@ -187,6 +187,61 @@ import {
   StatsGetProfileTokenStatsInput,
   StatsGetProfileTokenStatsResult,
 } from "./stats";
+import {
+  DirectorEvent,
+  ProviderAccount,
+  ProviderCapabilitySnapshot,
+  ProviderCatalogRefreshResult,
+  SASCODE_WS_METHODS,
+  SascodeAcquireBrowserControlInput,
+  SascodeAcquireBrowserControlResult,
+  SascodeActivateModuleInput,
+  SascodeActivateModuleResult,
+  SascodeBootstrapProjectInput,
+  SascodeBootstrapProjectResult,
+  SascodeCreateBrowserInstanceInput,
+  SascodeDirectorCommand,
+  SascodeDirectorCommandResult,
+  SascodeDispatchAttemptInput,
+  SascodeDispatchAttemptResult,
+  SascodeGetProjectSnapshotInput,
+  SascodeGetWorkflowInput,
+  SascodeGetWorkspaceSnapshotInput,
+  SascodeGetWorkspaceLayoutInput,
+  SascodeInstallModuleInput,
+  SascodeInstantiateModuleInput,
+  SascodeListEventsInput,
+  SascodeProjectSnapshot,
+  SascodePublishRoutingPolicyInput,
+  SascodeRefreshProviderCapabilitiesInput,
+  SascodeSaveProviderAccountInput,
+  SascodeSetProviderAccountEnabledInput,
+  SascodeRunWorkflowInput,
+  SascodeRunWorkflowResult,
+  SascodeScheduleWorkUnitInput,
+  SascodeScheduleWorkUnitResult,
+  SascodeStartFeatureInput,
+  SascodeStartFeatureResult,
+  SascodeReleaseBrowserControlInput,
+  SascodeSaveBrowserProfileInput,
+  SascodeSavePermissionGrantInput,
+  SascodeSaveWorkspaceLayoutInput,
+  SascodeSaveAttentionPreferenceInput,
+  SascodeResolveAttentionItemInput,
+  SascodeSubmitResultInput,
+  SascodeSubmitResultResult,
+  SascodeUpdateBrowserInstanceInput,
+  SascodeUpdateModuleInstanceInput,
+  SascodeUpsertContextArtifactInput,
+  SascodeSubscribeEventsInput,
+  SascodeWorkspaceSnapshot,
+  SascodeWorkspaceLayout,
+  BrowserInstance,
+  BrowserProfile,
+  SascodeModuleInstance,
+  SascodeModuleManifest,
+  Workflow,
+} from "./sascode";
 import { WS_METHODS } from "./ws";
 import {
   WS_BOOTSTRAP_METHOD,
@@ -334,6 +389,304 @@ export const WsOrchestrationUnsubscribeThreadRpc = Rpc.make(
   {
     payload: OrchestrationRpcSchemas.unsubscribeThread.input,
     success: Schema.Void,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeGetWorkspaceSnapshotRpc = Rpc.make(
+  SASCODE_WS_METHODS.getWorkspaceSnapshot,
+  {
+    payload: SascodeGetWorkspaceSnapshotInput,
+    success: SascodeWorkspaceSnapshot,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeGetProjectSnapshotRpc = Rpc.make(
+  SASCODE_WS_METHODS.getProjectSnapshot,
+  {
+    payload: SascodeGetProjectSnapshotInput,
+    success: SascodeProjectSnapshot,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeGetWorkflowRpc = Rpc.make(
+  SASCODE_WS_METHODS.getWorkflow,
+  {
+    payload: SascodeGetWorkflowInput,
+    success: Schema.NullOr(Workflow),
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeListProviderCapabilitiesRpc = Rpc.make(
+  SASCODE_WS_METHODS.listProviderCapabilities,
+  {
+    payload: Schema.Struct({}),
+    success: Schema.Array(ProviderCapabilitySnapshot),
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeListProviderAccountsRpc = Rpc.make(
+  SASCODE_WS_METHODS.listProviderAccounts,
+  {
+    payload: Schema.Struct({}),
+    success: Schema.Array(ProviderAccount),
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeSaveProviderAccountRpc = Rpc.make(
+  SASCODE_WS_METHODS.saveProviderAccount,
+  {
+    payload: SascodeSaveProviderAccountInput,
+    success: ProviderAccount,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeSetProviderAccountEnabledRpc = Rpc.make(
+  SASCODE_WS_METHODS.setProviderAccountEnabled,
+  {
+    payload: SascodeSetProviderAccountEnabledInput,
+    success: Schema.NullOr(ProviderAccount),
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeRefreshProviderCapabilitiesRpc = Rpc.make(
+  SASCODE_WS_METHODS.refreshProviderCapabilities,
+  {
+    payload: SascodeRefreshProviderCapabilitiesInput,
+    success: ProviderCatalogRefreshResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeListEventsRpc = Rpc.make(
+  SASCODE_WS_METHODS.listEvents,
+  {
+    payload: SascodeListEventsInput,
+    success: Schema.Array(DirectorEvent),
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeExecuteDirectorCommandRpc = Rpc.make(
+  SASCODE_WS_METHODS.executeDirectorCommand,
+  {
+    payload: SascodeDirectorCommand,
+    success: SascodeDirectorCommandResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeScheduleWorkUnitRpc = Rpc.make(
+  SASCODE_WS_METHODS.scheduleWorkUnit,
+  {
+    payload: SascodeScheduleWorkUnitInput,
+    success: SascodeScheduleWorkUnitResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeRunWorkflowRpc = Rpc.make(
+  SASCODE_WS_METHODS.runWorkflow,
+  {
+    payload: SascodeRunWorkflowInput,
+    success: SascodeRunWorkflowResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeSubmitResultRpc = Rpc.make(
+  SASCODE_WS_METHODS.submitResult,
+  {
+    payload: SascodeSubmitResultInput,
+    success: SascodeSubmitResultResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeDispatchAttemptRpc = Rpc.make(
+  SASCODE_WS_METHODS.dispatchAttempt,
+  {
+    payload: SascodeDispatchAttemptInput,
+    success: SascodeDispatchAttemptResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeSubscribeEventsRpc = Rpc.make(
+  SASCODE_WS_METHODS.subscribeEvents,
+  {
+    payload: SascodeSubscribeEventsInput,
+    success: DirectorEvent,
+    error: WsRpcError,
+    stream: true,
+  },
+);
+
+export const WsSascodePublishRoutingPolicyRpc = Rpc.make(
+  SASCODE_WS_METHODS.publishRoutingPolicy,
+  {
+    payload: SascodePublishRoutingPolicyInput,
+    success: Schema.Boolean,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeUpsertContextArtifactRpc = Rpc.make(
+  SASCODE_WS_METHODS.upsertContextArtifact,
+  {
+    payload: SascodeUpsertContextArtifactInput,
+    success: Schema.Void,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeSavePermissionGrantRpc = Rpc.make(
+  SASCODE_WS_METHODS.savePermissionGrant,
+  {
+    payload: SascodeSavePermissionGrantInput,
+    success: Schema.Boolean,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeSaveBrowserProfileRpc = Rpc.make(
+  SASCODE_WS_METHODS.saveBrowserProfile,
+  {
+    payload: SascodeSaveBrowserProfileInput,
+    success: BrowserProfile,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeCreateBrowserInstanceRpc = Rpc.make(
+  SASCODE_WS_METHODS.createBrowserInstance,
+  {
+    payload: SascodeCreateBrowserInstanceInput,
+    success: BrowserInstance,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeAcquireBrowserControlRpc = Rpc.make(
+  SASCODE_WS_METHODS.acquireBrowserControl,
+  {
+    payload: SascodeAcquireBrowserControlInput,
+    success: SascodeAcquireBrowserControlResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeReleaseBrowserControlRpc = Rpc.make(
+  SASCODE_WS_METHODS.releaseBrowserControl,
+  {
+    payload: SascodeReleaseBrowserControlInput,
+    success: BrowserInstance,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeUpdateBrowserInstanceRpc = Rpc.make(
+  SASCODE_WS_METHODS.updateBrowserInstance,
+  {
+    payload: SascodeUpdateBrowserInstanceInput,
+    success: BrowserInstance,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeInstallModuleRpc = Rpc.make(
+  SASCODE_WS_METHODS.installModule,
+  {
+    payload: SascodeInstallModuleInput,
+    success: SascodeModuleManifest,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeInstantiateModuleRpc = Rpc.make(
+  SASCODE_WS_METHODS.instantiateModule,
+  {
+    payload: SascodeInstantiateModuleInput,
+    success: SascodeModuleInstance,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeActivateModuleRpc = Rpc.make(
+  SASCODE_WS_METHODS.activateModule,
+  {
+    payload: SascodeActivateModuleInput,
+    success: SascodeActivateModuleResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeUpdateModuleInstanceRpc = Rpc.make(
+  SASCODE_WS_METHODS.updateModuleInstance,
+  {
+    payload: SascodeUpdateModuleInstanceInput,
+    success: SascodeModuleInstance,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeBootstrapProjectRpc = Rpc.make(
+  SASCODE_WS_METHODS.bootstrapProject,
+  {
+    payload: SascodeBootstrapProjectInput,
+    success: SascodeBootstrapProjectResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeStartFeatureRpc = Rpc.make(
+  SASCODE_WS_METHODS.startFeature,
+  {
+    payload: SascodeStartFeatureInput,
+    success: SascodeStartFeatureResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeGetWorkspaceLayoutRpc = Rpc.make(
+  SASCODE_WS_METHODS.getWorkspaceLayout,
+  {
+    payload: SascodeGetWorkspaceLayoutInput,
+    success: Schema.NullOr(SascodeWorkspaceLayout),
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeSaveWorkspaceLayoutRpc = Rpc.make(
+  SASCODE_WS_METHODS.saveWorkspaceLayout,
+  {
+    payload: SascodeSaveWorkspaceLayoutInput,
+    success: SascodeWorkspaceLayout,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeSaveAttentionPreferenceRpc = Rpc.make(
+  SASCODE_WS_METHODS.saveAttentionPreference,
+  {
+    payload: SascodeSaveAttentionPreferenceInput,
+    success: Schema.Void,
+    error: WsRpcError,
+  },
+);
+
+export const WsSascodeResolveAttentionItemRpc = Rpc.make(
+  SASCODE_WS_METHODS.resolveAttentionItem,
+  {
+    payload: SascodeResolveAttentionItemInput,
+    success: Schema.Boolean,
     error: WsRpcError,
   },
 );
@@ -996,6 +1349,39 @@ export const WsFeatureRpcGroup = RpcGroup.make(
   WsOrchestrationSubscribeThreadRpc,
   WsOrchestrationUnsubscribeThreadRpc,
   WsOrchestrationSubscribeDomainEventsRpc,
+  WsSascodeGetWorkspaceSnapshotRpc,
+  WsSascodeGetProjectSnapshotRpc,
+  WsSascodeGetWorkflowRpc,
+  WsSascodeListProviderCapabilitiesRpc,
+  WsSascodeListProviderAccountsRpc,
+  WsSascodeSaveProviderAccountRpc,
+  WsSascodeSetProviderAccountEnabledRpc,
+  WsSascodeRefreshProviderCapabilitiesRpc,
+  WsSascodeListEventsRpc,
+  WsSascodeExecuteDirectorCommandRpc,
+  WsSascodeScheduleWorkUnitRpc,
+  WsSascodeRunWorkflowRpc,
+  WsSascodeSubmitResultRpc,
+  WsSascodeDispatchAttemptRpc,
+  WsSascodeSubscribeEventsRpc,
+  WsSascodePublishRoutingPolicyRpc,
+  WsSascodeUpsertContextArtifactRpc,
+  WsSascodeSavePermissionGrantRpc,
+  WsSascodeSaveBrowserProfileRpc,
+  WsSascodeCreateBrowserInstanceRpc,
+  WsSascodeAcquireBrowserControlRpc,
+  WsSascodeReleaseBrowserControlRpc,
+  WsSascodeUpdateBrowserInstanceRpc,
+  WsSascodeInstallModuleRpc,
+  WsSascodeInstantiateModuleRpc,
+  WsSascodeActivateModuleRpc,
+  WsSascodeUpdateModuleInstanceRpc,
+  WsSascodeBootstrapProjectRpc,
+  WsSascodeStartFeatureRpc,
+  WsSascodeGetWorkspaceLayoutRpc,
+  WsSascodeSaveWorkspaceLayoutRpc,
+  WsSascodeSaveAttentionPreferenceRpc,
+  WsSascodeResolveAttentionItemRpc,
   WsProjectsDiscoverScriptsRpc,
   WsProjectsListDirectoriesRpc,
   WsProjectsSearchEntriesRpc,

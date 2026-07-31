@@ -4,6 +4,7 @@ import {
   CommandId,
   DEFAULT_TERMINAL_ID,
   ORCHESTRATION_WS_METHODS,
+  SASCODE_WS_METHODS,
   ThreadId,
   WS_BOOTSTRAP_METHOD,
   WS_BOOTSTRAP_PATH,
@@ -121,6 +122,7 @@ import { bufferLiveUiStream, type LiveUiStreamDropReport } from "./wsStreamBackp
 import { makeCursorSafeSnapshotLiveStream } from "./wsSnapshotLiveStream";
 import { PullRequestService } from "./pullRequests/Services/PullRequestService";
 import { resolveGitHubRepository } from "./pullRequests/repositoryResolution";
+import { SascodeApi } from "./sascode/Services/SascodeApi";
 
 export function canManageExternalMcp(role: "owner" | "client"): boolean {
   return role === "owner";
@@ -319,6 +321,7 @@ const makeWsRpcHandlersLayer = () =>
       const runtimeStartup = yield* ServerRuntimeStartup;
       const serverEnvironment = yield* ServerEnvironment;
       const serverSettings = yield* ServerSettingsService;
+      const sascode = yield* SascodeApi;
       const terminalManager = yield* TerminalManager;
       const textGeneration = yield* TextGeneration;
       const workspaceEntries = yield* WorkspaceEntries;
@@ -736,12 +739,16 @@ const makeWsRpcHandlersLayer = () =>
       const rpcEffect = <A, E, R>(effect: Effect.Effect<A, E, R>, fallbackMessage: string) =>
         effect.pipe(Effect.mapError((cause) => toWsRpcError(cause, fallbackMessage)));
 
-      const requireOwner = Effect.gen(function* () {
+      const requireSessionOwner = Effect.gen(function* () {
         if (!canManageExternalMcp(yield* CurrentWsSessionRole)) {
           return yield* Effect.fail(
             new WsRpcError({ message: "Owner authorization is required for this operation." }),
           );
         }
+      });
+
+      const requireOwner = Effect.gen(function* () {
+        yield* requireSessionOwner;
         if (!isLoopbackHost(config.host) || config.publicUrl !== undefined) {
           return yield* Effect.fail(
             new WsRpcError({
@@ -968,6 +975,230 @@ const makeWsRpcHandlersLayer = () =>
             ),
           ),
         [ORCHESTRATION_WS_METHODS.unsubscribeThread]: () => Effect.void,
+        [SASCODE_WS_METHODS.getWorkspaceSnapshot]: (input) =>
+          rpcEffect(
+            sascode.getWorkspaceSnapshot(input),
+            "Failed to load the SASCODE workspace snapshot",
+          ),
+        [SASCODE_WS_METHODS.getProjectSnapshot]: (input) =>
+          rpcEffect(
+            sascode.getProjectSnapshot(input),
+            "Failed to load the SASCODE project snapshot",
+          ),
+        [SASCODE_WS_METHODS.getWorkflow]: (input) =>
+          rpcEffect(
+            sascode.getWorkflow(input),
+            "Failed to load the SASCODE workflow",
+          ),
+        [SASCODE_WS_METHODS.listProviderCapabilities]: () =>
+          rpcEffect(
+            sascode.listProviderCapabilities(),
+            "Failed to list SASCODE provider capabilities",
+          ),
+        [SASCODE_WS_METHODS.listProviderAccounts]: () =>
+          rpcEffect(
+            sascode.listProviderAccounts(),
+            "Failed to list SASCODE provider accounts",
+          ),
+        [SASCODE_WS_METHODS.saveProviderAccount]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.saveProviderAccount(input)),
+            ),
+            "Failed to save the SASCODE provider account",
+          ),
+        [SASCODE_WS_METHODS.setProviderAccountEnabled]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.setProviderAccountEnabled(input)),
+            ),
+            "Failed to update the SASCODE provider account",
+          ),
+        [SASCODE_WS_METHODS.refreshProviderCapabilities]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(
+                sascode.refreshProviderCapabilities(input),
+              ),
+            ),
+            "Failed to refresh SASCODE provider capabilities",
+          ),
+        [SASCODE_WS_METHODS.listEvents]: (input) =>
+          rpcEffect(
+            sascode.listEvents(input),
+            "Failed to list SASCODE Director events",
+          ),
+        [SASCODE_WS_METHODS.executeDirectorCommand]: (command) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.executeDirectorCommand(command)),
+            ),
+            "Failed to execute the SASCODE Director command",
+          ),
+        [SASCODE_WS_METHODS.scheduleWorkUnit]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.scheduleWorkUnit(input)),
+            ),
+            "Failed to schedule the SASCODE work unit",
+          ),
+        [SASCODE_WS_METHODS.runWorkflow]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.runWorkflow(input)),
+            ),
+            "Failed to run the SASCODE workflow",
+          ),
+        [SASCODE_WS_METHODS.submitResult]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.submitResult(input)),
+            ),
+            "Failed to submit the SASCODE result",
+          ),
+        [SASCODE_WS_METHODS.dispatchAttempt]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.dispatchAttempt(input)),
+            ),
+            "Failed to dispatch the SASCODE attempt",
+          ),
+        [SASCODE_WS_METHODS.publishRoutingPolicy]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.publishRoutingPolicy(input)),
+            ),
+            "Failed to publish the SASCODE routing policy",
+          ),
+        [SASCODE_WS_METHODS.upsertContextArtifact]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.upsertContextArtifact(input)),
+            ),
+            "Failed to upsert the SASCODE context artifact",
+          ),
+        [SASCODE_WS_METHODS.savePermissionGrant]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.savePermissionGrant(input)),
+            ),
+            "Failed to save the SASCODE permission grant",
+          ),
+        [SASCODE_WS_METHODS.saveBrowserProfile]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.saveBrowserProfile(input)),
+            ),
+            "Failed to save the SASCODE browser profile",
+          ),
+        [SASCODE_WS_METHODS.createBrowserInstance]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.createBrowserInstance(input)),
+            ),
+            "Failed to create the SASCODE browser instance",
+          ),
+        [SASCODE_WS_METHODS.acquireBrowserControl]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.acquireBrowserControl(input)),
+            ),
+            "Failed to acquire SASCODE browser control",
+          ),
+        [SASCODE_WS_METHODS.releaseBrowserControl]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.releaseBrowserControl(input)),
+            ),
+            "Failed to release SASCODE browser control",
+          ),
+        [SASCODE_WS_METHODS.updateBrowserInstance]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.updateBrowserInstance(input)),
+            ),
+            "Failed to update the SASCODE browser instance",
+          ),
+        [SASCODE_WS_METHODS.installModule]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.installModule(input)),
+            ),
+            "Failed to install the SASCODE module",
+          ),
+        [SASCODE_WS_METHODS.instantiateModule]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.instantiateModule(input)),
+            ),
+            "Failed to instantiate the SASCODE module",
+          ),
+        [SASCODE_WS_METHODS.activateModule]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.activateModule(input)),
+            ),
+            "Failed to activate the SASCODE module",
+          ),
+        [SASCODE_WS_METHODS.updateModuleInstance]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.updateModuleInstance(input)),
+            ),
+            "Failed to update the SASCODE module instance",
+          ),
+        [SASCODE_WS_METHODS.bootstrapProject]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.bootstrapProject(input)),
+            ),
+            "Failed to bootstrap the SASCODE project",
+          ),
+        [SASCODE_WS_METHODS.startFeature]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.startFeature(input)),
+            ),
+            "Failed to start the SASCODE feature workflow",
+          ),
+        [SASCODE_WS_METHODS.getWorkspaceLayout]: (input) =>
+          rpcEffect(
+            sascode.getWorkspaceLayout(input),
+            "Failed to load the SASCODE workspace layout",
+          ),
+        [SASCODE_WS_METHODS.saveWorkspaceLayout]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.saveWorkspaceLayout(input)),
+            ),
+            "Failed to save the SASCODE workspace layout",
+          ),
+        [SASCODE_WS_METHODS.saveAttentionPreference]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.saveAttentionPreference(input)),
+            ),
+            "Failed to save the SASCODE attention preference",
+          ),
+        [SASCODE_WS_METHODS.resolveAttentionItem]: (input) =>
+          rpcEffect(
+            requireSessionOwner.pipe(
+              Effect.andThen(sascode.resolveAttentionItem(input)),
+            ),
+            "Failed to resolve the SASCODE attention item",
+          ),
+        [SASCODE_WS_METHODS.subscribeEvents]: (input, { clientId }) =>
+          streamAdmission.guard(
+            clientId,
+            { key: `sascode.events:${input.projectId ?? "workspace"}` },
+            bufferLiveUiStream(sascode.subscribeEvents(input), {
+              label: "sascode.events",
+            }).pipe(
+              Stream.mapError((cause) =>
+                toWsRpcError(cause, "Failed to stream SASCODE Director events"),
+              ),
+            ),
+          ),
         [WS_METHODS.subscribeOrchestrationDomainEvents]: (_, { clientId }) =>
           streamAdmission.guard(
             clientId,

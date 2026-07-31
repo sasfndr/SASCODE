@@ -33,6 +33,10 @@ export function deriveTurnStartSession(input: {
     threadId: input.threadId,
     status: "starting",
     providerName: input.currentSession?.providerName ?? input.providerName,
+    providerConnectionId:
+      input.currentSession?.providerConnectionId ?? null,
+    providerAccountLabel:
+      input.currentSession?.providerAccountLabel ?? null,
     runtimeMode: input.currentSession?.runtimeMode ?? input.requestedRuntimeMode,
     activeTurnId: null,
     lastError: null,
